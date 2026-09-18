@@ -14,41 +14,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.encryption;
+package org.neo4j.driver.encryption.async;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.encryption.BaseEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
 import org.neo4j.driver.util.Preview;
 
 /**
  * A repository for {@link EncapsulatedKeyRecord} data.
  * <p>
- * Implementations may perform blocking operations. The driver adapts synchronous operations to its asynchronous
- * execution model using the {@link #executor()}.
+ * Implementations MUST NOT block the calling thread. Repository operations that require I/O or other potentially
+ * blocking work must perform that work asynchronously and return a {@link CompletionStage} that completes when the
+ * operation has finished.
  * <p>
  * Implementations MUST enforce alias uniqueness and generate globally unique and immutable key identifiers.
  *
  * @since 6.3.0
  */
 @Preview(name = "Property Encryption")
-public non-sealed interface EncapsulatedKeyRecordRepository extends BaseEncapsulatedKeyRecordRepository {
+public non-sealed interface AsyncEncapsulatedKeyRecordRepository extends BaseEncapsulatedKeyRecordRepository {
     /**
      * Finds and returns an {@link EncapsulatedKeyRecord} by its id.
      *
      * @param id the key id, must not be {@literal null}
-     * @return an {@link Optional} containing the key, or {@link Optional#empty()} if no key with the given id exists
+     * @return a {@link CompletionStage} that completes with the key, or completes with {@literal null} if no key with the given id exists
      */
-    Optional<EncapsulatedKeyRecord> findById(String id);
+    CompletionStage<EncapsulatedKeyRecord> findByIdAsync(String id);
 
     /**
      * Finds and returns an {@link EncapsulatedKeyRecord} by its alias.
      *
      * @param alias the key alias, must not be {@literal null}
-     * @return an {@link Optional} containing the key, or {@link Optional#empty()} if no key with the given alias exists
+     * @return a {@link CompletionStage} that completes with the key, or completes with {@literal null} if no key with the given alias
+     * exists
      */
-    Optional<EncapsulatedKeyRecord> findByAlias(String alias);
+    CompletionStage<EncapsulatedKeyRecord> findByAliasAsync(String alias);
 
     /**
      * Creates the encapsulation as a key and assigns it a globally unique id.
@@ -59,9 +61,10 @@ public non-sealed interface EncapsulatedKeyRecordRepository extends BaseEncapsul
      * @param alias         the key alias, may be {@literal null}
      * @param encapsulation the key encapsulation, must not be {@literal null}
      * @param metadata      the key metadata, must not be {@literal null}
-     * @return the created key
+     * @return a {@link CompletionStage} that completes with the created key
      */
-    EncapsulatedKeyRecord create(String alias, byte[] encapsulation, Map<String, String> metadata);
+    CompletionStage<EncapsulatedKeyRecord> createAsync(
+            String alias, byte[] encapsulation, Map<String, String> metadata);
 
     /**
      * Sets the alias of an encapsulated key by id. The alias must not be used by another key. To assign an alias
@@ -69,26 +72,15 @@ public non-sealed interface EncapsulatedKeyRecordRepository extends BaseEncapsul
      *
      * @param id    the key id, must not be {@literal null}
      * @param alias the key alias, may be {@literal null} to remove the alias
+     * @return a {@link CompletionStage} that completes when the alias has been updated
      */
-    void setAliasById(String id, String alias);
+    CompletionStage<Void> setAliasByIdAsync(String id, String alias);
 
     /**
      * Deletes a key by id.
      *
      * @param id the key id, must not be {@literal null}
+     * @return a {@link CompletionStage} that completes when the key has been deleted
      */
-    void deleteById(String id);
-
-    /**
-     * Returns the {@link Executor} used by the driver when adapting this synchronous repository to its asynchronous
-     * execution model.
-     * <p>
-     * Implementations performing blocking operations may override this method to provide an executor appropriate for
-     * those operations.
-     *
-     * @return the executor
-     */
-    default Executor executor() {
-        return ForkJoinPool.commonPool();
-    }
+    CompletionStage<Void> deleteByIdAsync(String id);
 }

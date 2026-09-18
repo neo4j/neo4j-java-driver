@@ -22,14 +22,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
 
-public final class InMemoryEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecordRepository {
+public final class InMemoryEncapsulatedKeyRecordRepository implements AsyncEncapsulatedKeyRecordRepository {
     private final Map<String, Key> idToKey = new HashMap<>();
     private final Map<String, String> aliasToId = new HashMap<>();
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> findById(String id) {
+    public CompletionStage<EncapsulatedKeyRecord> findByIdAsync(String id) {
         var key = idToKey.get(id);
         if (key == null) {
             return CompletableFuture.completedFuture(null);
@@ -39,7 +39,7 @@ public final class InMemoryEncapsulatedKeyRecordRepository implements Encapsulat
     }
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> findByAlias(String alias) {
+    public CompletionStage<EncapsulatedKeyRecord> findByAliasAsync(String alias) {
         if (alias == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -49,19 +49,19 @@ public final class InMemoryEncapsulatedKeyRecordRepository implements Encapsulat
             return CompletableFuture.completedFuture(null);
         }
 
-        return findById(id);
+        return findByIdAsync(id);
     }
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> create(
+    public CompletionStage<EncapsulatedKeyRecord> createAsync(
             String alias, byte[] encapsulation, Map<String, String> metadata) {
         var id = UUID.randomUUID().toString();
         save(id, alias, encapsulation, metadata);
-        return findById(id);
+        return findByIdAsync(id);
     }
 
     @Override
-    public CompletionStage<Void> setAliasById(String id, String alias) {
+    public CompletionStage<Void> setAliasByIdAsync(String id, String alias) {
         var key = idToKey.get(id);
         if (key == null) {
             throw new IllegalArgumentException("No key exists with id: " + id);
@@ -88,7 +88,7 @@ public final class InMemoryEncapsulatedKeyRecordRepository implements Encapsulat
     }
 
     @Override
-    public CompletionStage<Void> deleteById(String id) {
+    public CompletionStage<Void> deleteByIdAsync(String id) {
         var key = idToKey.remove(id);
         if (key != null && key.alias() != null) {
             aliasToId.remove(key.alias());

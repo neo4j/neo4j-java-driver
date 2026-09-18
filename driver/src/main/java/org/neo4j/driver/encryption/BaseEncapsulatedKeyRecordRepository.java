@@ -14,24 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.encryption;
+package org.neo4j.driver.encryption;
 
-import java.util.concurrent.CompletionStage;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
-import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
+import org.neo4j.driver.util.Preview;
 
-public interface PropertyEncryptionHandler {
-    String profileName();
-
-    CompletionStage<byte[]> encrypt(InternalPropertyEncryptionRequest encryptionRequest);
-
-    CompletionStage<Value> decrypt(
-            InternalPropertyDecryptionRequest decryptionRequest, AEADEncryptedProperty aadEncryptedProperty);
-
-    AsyncKeyEncapsulationService keyEncapsulationService();
-
-    AsyncEncapsulatedKeyRecordRepository keyRepository();
-
-    KeyCache keyCache();
-}
+/**
+ * A base repository type for {@link EncapsulatedKeyRecord} data.
+ *
+ * @since 6.3.0
+ * @see EncapsulatedKeyRecordRepository
+ * @see AsyncEncapsulatedKeyRecordRepository
+ */
+@Preview(name = "Property Encryption")
+public sealed interface BaseEncapsulatedKeyRecordRepository
+        permits EncapsulatedKeyRecordRepository, AsyncEncapsulatedKeyRecordRepository {}

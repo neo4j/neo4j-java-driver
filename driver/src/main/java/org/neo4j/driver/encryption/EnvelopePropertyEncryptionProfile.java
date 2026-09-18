@@ -29,7 +29,8 @@ import org.neo4j.driver.util.Preview;
  * <p>
  * Envelope encryption separates encryption of data from protection of the key used to encrypt that data. Property
  * values are encrypted using a 256-bit data encryption key with AES-GCM ({@literal "AES/GCM/NoPadding"} specifically).
- * The key and its corresponding encapsulation are produced by a user-provided {@link KeyEncapsulationService}.
+ * The key and its corresponding encapsulation are produced by a user-provided {@link BaseKeyEncapsulationService}
+ * implementation. Both synchronous and asynchronous implementations are supported.
  * <p>
  * Each encryption operation uses a 96-bit (12-byte) initialization vector (IV). AES-GCM uses a 128-bit (16-byte)
  * authentication tag to provide integrity and authenticity of the encrypted data and any associated authenticated data
@@ -41,9 +42,9 @@ import org.neo4j.driver.util.Preview;
  * Both the {@link Provider} used for AES-GCM and the {@link SecureRandom} from which IVs are sourced are configurable.
  * If neither is explicitly provided, the Java runtime determines and provides them according to its configuration.
  * <p>
- * The encapsulation and associated metadata are stored in a user-provided {@link EncapsulatedKeyRecordRepository}.
+ * The encapsulation and associated metadata are stored in a user-provided {@link BaseEncapsulatedKeyRecordRepository}.
  * When a property is encrypted, the driver obtains the corresponding encapsulated key from the repository and uses
- * the {@link KeyEncapsulationService} to decapsulate the data key. The key is then used for AES-GCM encryption. When a
+ * the key encapsulation service to decapsulate the data key. The key is then used for AES-GCM encryption. When a
  * property is decrypted, the driver similarly obtains the encapsulated key and uses the service to decapsulate the key
  * required for decryption.
  * <p>
@@ -57,8 +58,8 @@ import org.neo4j.driver.util.Preview;
  * application-level reference and may be reassigned to a different key over time.
  * <p>
  * By default, the driver caches decapsulated data encryption keys to avoid repeated key resolution. Depending on the
- * {@link KeyEncapsulationService} and {@link EncapsulatedKeyRecordRepository} implementations, resolving a key may also
- * require network exchanges. The cache is keyed by the key's globally unique identifier and is subject to a
+ * {@link BaseKeyEncapsulationService} and {@link BaseEncapsulatedKeyRecordRepository} implementations, resolving a key
+ * may also require network exchanges. The cache is keyed by the key's globally unique identifier and is subject to a
  * configurable maximum size and time-to-live (TTL).
  * <p>
  * Aliases are resolved separately through a key alias index that maps aliases to key identifiers. The alias index does
@@ -81,14 +82,16 @@ public sealed interface EnvelopePropertyEncryptionProfile extends PropertyEncryp
      * Returns a new builder for {@link EnvelopePropertyEncryptionProfile}.
      *
      * @param name                    the unique name of the profile instance, must not be {@literal null} or empty
-     * @param keyEncapsulationService the {@link KeyEncapsulationService} implementation, must not be {@literal null}
-     * @param keyRepository           the {@link EncapsulatedKeyRecordRepository} implementation, must not be {@literal null}
+     * @param keyEncapsulationService the {@link BaseKeyEncapsulationService} implementation, must not be
+     *                                {@literal null}
+     * @param keyRepository           the {@link BaseEncapsulatedKeyRecordRepository} implementation, must not be
+     *                                {@literal null}
      * @return the new builder
      */
     static Builder builder(
             String name,
-            KeyEncapsulationService keyEncapsulationService,
-            EncapsulatedKeyRecordRepository keyRepository) {
+            BaseKeyEncapsulationService keyEncapsulationService,
+            BaseEncapsulatedKeyRecordRepository keyRepository) {
         return new InternalEnvelopePropertyEncryptionProfile.Builder(name, keyEncapsulationService, keyRepository);
     }
 
@@ -114,16 +117,16 @@ public sealed interface EnvelopePropertyEncryptionProfile extends PropertyEncryp
         /**
          * Configures the key cache.
          * <p>
-         * The key cache stores mappings from key ids to decapsulated keys. This is especially useful when
-         * {@link EncapsulatedKeyRecordRepository} and/or {@link KeyEncapsulationService} require network exchanges.
+         * The key cache stores mappings from key ids to decapsulated keys. This is especially useful when the
+         * configured key repository or key encapsulation service requires network exchanges.
          * <p>
-         * The cache is enabled by default with a maximum size of {@literal 100} entries and an entry TTL of {@literal 15}
-         * minutes. When adding a new entry, expired entries are purged first. If the cache is still at its maximum size,
-         * the least recently used entry is evicted.
+         * The cache is enabled by default with a maximum size of {@literal 100} entries and an entry TTL of
+         * {@literal 15} minutes. When adding a new entry, expired entries are purged first. If the cache is still at
+         * its maximum size, the least recently used entry is evicted.
          * <p>
-         * Key ids are expected to be globally unique, so the TTL can be configured to be longer if avoiding repeated key
-         * decapsulation is preferred. A longer TTL also means that decapsulated keys remain in memory for longer and are
-         * not refreshed or removed from the cache as frequently.
+         * Key ids are expected to be globally unique, so the TTL can be configured to be longer if avoiding repeated
+         * key decapsulation is preferred. A longer TTL also means that decapsulated keys remain in memory for longer
+         * and are not refreshed or removed from the cache as frequently.
          *
          * @param maxSize the maximum cache size, must be greater than {@literal 0}
          * @param ttl     the entry TTL, must not be {@literal null}, {@link Duration#isNegative()} or
@@ -144,15 +147,16 @@ public sealed interface EnvelopePropertyEncryptionProfile extends PropertyEncryp
         /**
          * Configures the key alias index.
          * <p>
-         * The key alias index stores mappings from key aliases to key ids. This is especially useful when
-         * {@link EncapsulatedKeyRecordRepository} and/or {@link KeyEncapsulationService} require network exchanges.
-         * The key alias index can only be enabled when the key cache is enabled.
+         * The key alias index stores mappings from key aliases to key ids. This is especially useful when the
+         * configured key repository or key encapsulation service requires network exchanges. The key alias index can
+         * only be enabled when the key cache is enabled.
          * <p>
-         * The index is enabled by default with a maximum size of {@literal 100} entries and an entry TTL of {@literal 15}
-         * seconds.
+         * The index is enabled by default with a maximum size of {@literal 100} entries and an entry TTL of
+         * {@literal 15} seconds.
          * <p>
-         * A shorter TTL allows an alias to be removed from one key and assigned to another key while limiting the period
-         * during which a driver may use a cached mapping to the previous key, allowing for predictable alias reassignment.
+         * A shorter TTL allows an alias to be removed from one key and assigned to another key while limiting the
+         * period during which a driver may use a cached mapping to the previous key, allowing for predictable alias
+         * reassignment.
          *
          * @param maxSize the maximum cache size, must be greater than {@literal 0}
          * @param ttl     the entry TTL, must not be {@literal null}, {@link Duration#isNegative()} or
@@ -177,18 +181,18 @@ public sealed interface EnvelopePropertyEncryptionProfile extends PropertyEncryp
     }
 
     /**
-     * Returns the {@link KeyEncapsulationService} used by this profile.
+     * Returns the key encapsulation service used by this profile.
      *
-     * @return the encapsulation service
+     * @return the key encapsulation service
      */
-    KeyEncapsulationService keyEncapsulationService();
+    BaseKeyEncapsulationService keyEncapsulationService();
 
     /**
-     * Returns the {@link EncapsulatedKeyRecordRepository} used by this profile.
+     * Returns the key repository used by this profile.
      *
      * @return the key repository
      */
-    EncapsulatedKeyRecordRepository keyRepository();
+    BaseEncapsulatedKeyRecordRepository keyRepository();
 
     /**
      * Returns {@link CryptoContext} if set.

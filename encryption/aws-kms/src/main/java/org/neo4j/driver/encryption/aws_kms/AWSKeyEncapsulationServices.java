@@ -19,19 +19,20 @@ package org.neo4j.driver.encryption.aws_kms;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.util.Objects;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.BaseKeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 
 /**
- * A factory for {@link KeyEncapsulationService} implementations using AWS KMS.
+ * A factory for {@link BaseKeyEncapsulationService} implementations using AWS KMS.
  *
- * @see KeyEncapsulationService
+ * @see BaseKeyEncapsulationService
  * @since 6.3.0
  */
 public final class AWSKeyEncapsulationServices {
     private AWSKeyEncapsulationServices() {}
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses AWS KMS to encapsulate and decapsulate those keys.
      * <p>
      * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
@@ -45,14 +46,14 @@ public final class AWSKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(AwsKeyEncapsulationOptions defaultOptions)
+    public static AsyncKeyEncapsulationService create(AwsKeyEncapsulationOptions defaultOptions)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);
         return new AWSKeyEncapsulationService(defaultOptions, null);
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses AWS KMS to encapsulate and decapsulate those keys.
      * <p>
      * The supplied {@link Provider} is used for local AES data key generation. AWS KMS encrypts and decrypts the
@@ -66,7 +67,7 @@ public final class AWSKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(AwsKeyEncapsulationOptions defaultOptions, Provider provider)
+    public static AsyncKeyEncapsulationService create(AwsKeyEncapsulationOptions defaultOptions, Provider provider)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);
         Objects.requireNonNull(provider);

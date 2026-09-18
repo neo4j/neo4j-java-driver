@@ -23,10 +23,10 @@ import org.bouncycastle.jcajce.interfaces.MLKEMPrivateKey;
 import org.bouncycastle.jcajce.interfaces.MLKEMPublicKey;
 import org.bouncycastle.jcajce.spec.MLKEMParameterSpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 
 final class KeyEncapsulationServiceUtil {
-    static KeyEncapsulationService create() {
+    static AsyncKeyEncapsulationService create() {
         var provider = new BouncyCastleProvider();
         KeyPairGenerator kpg;
         try {

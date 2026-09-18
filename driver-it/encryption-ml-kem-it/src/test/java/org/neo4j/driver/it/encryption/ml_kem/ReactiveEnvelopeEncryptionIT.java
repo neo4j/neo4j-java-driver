@@ -16,12 +16,12 @@
  */
 package org.neo4j.driver.it.encryption.ml_kem;
 
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.it.encryption.common.AbstractReactiveEnvelopeEncryptionIT;
 
 public final class ReactiveEnvelopeEncryptionIT extends AbstractReactiveEnvelopeEncryptionIT {
     @Override
-    protected KeyEncapsulationService keyEncapsulationService() {
+    protected AsyncKeyEncapsulationService keyEncapsulationService() {
         return KeyEncapsulationServiceUtil.create();
     }
 }

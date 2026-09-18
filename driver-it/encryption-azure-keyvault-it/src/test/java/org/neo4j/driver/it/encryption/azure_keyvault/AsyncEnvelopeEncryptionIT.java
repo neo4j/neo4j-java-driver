@@ -18,7 +18,7 @@ package org.neo4j.driver.it.encryption.azure_keyvault;
 
 import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.encryption.azure_keyvault.AzureKeyEncapsulationServices;
 import org.neo4j.driver.it.encryption.common.AbstractAsyncEnvelopeEncryptionIT;
 
@@ -26,7 +26,7 @@ import org.neo4j.driver.it.encryption.common.AbstractAsyncEnvelopeEncryptionIT;
 final class AsyncEnvelopeEncryptionIT extends AbstractAsyncEnvelopeEncryptionIT {
 
     @Override
-    protected KeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
+    protected AsyncKeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
         return AzureKeyEncapsulationServices.create(OptionsLoader.fromEnv().orElseThrow());
     }
 }

@@ -56,7 +56,6 @@ import org.neo4j.driver.ClientCertificateManager;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
 import org.neo4j.driver.exceptions.AuthTokenManagerExecutionException;
 import org.neo4j.driver.internal.adaptedbolt.AdaptingDriverBoltConnectionSource;
 import org.neo4j.driver.internal.adaptedbolt.BoltAuthTokenManager;
@@ -69,6 +68,7 @@ import org.neo4j.driver.internal.adaptedbolt.SingleRoutedBoltConnectionSource;
 import org.neo4j.driver.internal.boltlistener.BoltConnectionListener;
 import org.neo4j.driver.internal.encryption.AEADEncryption;
 import org.neo4j.driver.internal.encryption.EnvelopePropertyEncryptionHandler;
+import org.neo4j.driver.internal.encryption.InternalEnvelopePropertyEncryptionProfile;
 import org.neo4j.driver.internal.encryption.PackStreamDecoderFactoryLoader;
 import org.neo4j.driver.internal.encryption.PackStreamEncoderFactoryLoader;
 import org.neo4j.driver.internal.encryption.PropertyEncryptionHandler;
@@ -454,7 +454,7 @@ public class DriverFactory {
             AEADEncryption aeadEncryption, Config config, DriverObservationProvider observationProvider) {
         return config.propertyEncryptionProfiles().stream()
                 .map(profile -> {
-                    if (profile instanceof EnvelopePropertyEncryptionProfile encryptionProfile) {
+                    if (profile instanceof InternalEnvelopePropertyEncryptionProfile encryptionProfile) {
                         return new EnvelopePropertyEncryptionHandler(
                                 encryptionProfile, aeadEncryption, createClock(), observationProvider);
                     } else {

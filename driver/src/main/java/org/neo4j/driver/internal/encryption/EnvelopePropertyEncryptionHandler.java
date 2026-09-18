@@ -29,9 +29,8 @@ import javax.crypto.SecretKey;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.encryption.CryptoContext;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
-import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
@@ -42,8 +41,8 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
     public static final long PROFILE_VERSION = 1;
 
     protected final String profileName;
-    private final EncapsulatedKeyRecordRepository keyRepository;
-    protected final KeyEncapsulationService keyEncapsulationService;
+    private final AsyncEncapsulatedKeyRecordRepository keyRepository;
+    protected final AsyncKeyEncapsulationService keyEncapsulationService;
     private final Provider provider;
     private final SecureRandom secureRandomIV;
     private final AEADEncryption aeadEncryption;
@@ -51,15 +50,15 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
     private final DriverObservationProvider observationProvider;
 
     public EnvelopePropertyEncryptionHandler(
-            EnvelopePropertyEncryptionProfile profile,
+            InternalEnvelopePropertyEncryptionProfile profile,
             AEADEncryption aeadEncryption,
             Clock clock,
             DriverObservationProvider observationProvider) {
         Objects.requireNonNull(profile);
         Objects.requireNonNull(clock);
         this.profileName = Objects.requireNonNull(profile.name());
-        this.keyEncapsulationService = Objects.requireNonNull(profile.keyEncapsulationService());
-        this.keyRepository = Objects.requireNonNull(profile.keyRepository());
+        this.keyEncapsulationService = Objects.requireNonNull(profile.asyncKeyEncapsulationService());
+        this.keyRepository = Objects.requireNonNull(profile.asyncKeyRepository());
         this.provider = profile.cryptoContext().map(CryptoContext::provider).orElse(null);
         this.secureRandomIV =
                 profile.cryptoContext().map(CryptoContext::ivSecureRandom).orElse(null);
@@ -116,12 +115,12 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
     }
 
     @Override
-    public KeyEncapsulationService keyEncapsulationService() {
+    public AsyncKeyEncapsulationService keyEncapsulationService() {
         return keyEncapsulationService;
     }
 
     @Override
-    public EncapsulatedKeyRecordRepository keyRepository() {
+    public AsyncEncapsulatedKeyRecordRepository keyRepository() {
         return keyRepository;
     }
 
@@ -139,7 +138,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                     return CompletableFuture.completedStage(new KeyData(cachedKey.id(), cachedKey.key()));
                 } else {
                     var findObservation = observationProvider.encapsulatedKeyRepositoryFindById();
-                    return observeAsync(findObservation, () -> keyRepository.findById(id))
+                    return observeAsync(findObservation, () -> keyRepository.findByIdAsync(id))
                             .thenApply(encapsulatedKeyRecord -> {
                                 if (encapsulatedKeyRecord == null) {
                                     throw new PropertyEncryptionException("No key found for id %s".formatted(id));
@@ -156,7 +155,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                         return CompletableFuture.completedStage(new KeyData(cachedKey.id(), cachedKey.key()));
                     } else {
                         var findObservation = observationProvider.encapsulatedKeyRepositoryFindByAlias();
-                        return observeAsync(findObservation, () -> keyRepository.findByAlias(alias))
+                        return observeAsync(findObservation, () -> keyRepository.findByAliasAsync(alias))
                                 .thenCompose(encapsulatedKeyRecord -> {
                                     if (encapsulatedKeyRecord == null) {
                                         throw new PropertyEncryptionException(
@@ -184,7 +183,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
         try {
             return observeAsync(
                             decapsulateObservation,
-                            () -> keyEncapsulationService.decapsulate(
+                            () -> keyEncapsulationService.decapsulateAsync(
                                     encapsulatedKeyRecord.encapsulation(), encapsulatedKeyRecord.metadata()))
                     .exceptionally(throwable -> {
                         throwable = Futures.completionExceptionCause(throwable);
@@ -214,7 +213,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
             return CompletableFuture.completedStage(cachedKey.key());
         } else {
             var findObservation = observationProvider.encapsulatedKeyRepositoryFindById();
-            var keyRecordStage = observeAsync(findObservation, () -> keyRepository.findById(keyId))
+            var keyRecordStage = observeAsync(findObservation, () -> keyRepository.findByIdAsync(keyId))
                     .thenApply(encapsulatedKeyRecord -> {
                         if (encapsulatedKeyRecord == null) {
                             throw new PropertyEncryptionException("No key found for id %s".formatted(keyId));
@@ -226,7 +225,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                     var decapsulateObservation = observationProvider.keyEncapsulationServiceDecapsulate();
                     return observeAsync(
                                     decapsulateObservation,
-                                    () -> keyEncapsulationService.decapsulate(
+                                    () -> keyEncapsulationService.decapsulateAsync(
                                             encapsulatedKey.encapsulation(), encapsulatedKey.metadata()))
                             .exceptionally(throwable -> {
                                 throwable = Futures.completionExceptionCause(throwable);

@@ -14,19 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.it.encryption.aws_kms;
+package org.neo4j.driver.encryption;
 
-import java.security.NoSuchAlgorithmException;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
-import org.neo4j.driver.encryption.aws_kms.AWSKeyEncapsulationServices;
-import org.neo4j.driver.it.encryption.common.AbstractReactiveEnvelopeEncryptionIT;
+import org.neo4j.driver.util.Preview;
 
-@ExtendWith(CredentialsCondition.class)
-class ReactiveEnvelopeEncryptionIT extends AbstractReactiveEnvelopeEncryptionIT {
-
-    @Override
-    protected AsyncKeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
-        return AWSKeyEncapsulationServices.create(OptionsLoader.fromEnv().orElseThrow());
-    }
-}
+/**
+ * A common base type for synchronous and asynchronous key encapsulation services.
+ *
+ * @since 6.3.0
+ * @see KeyEncapsulationService
+ * @see AsyncKeyEncapsulationService
+ */
+@Preview(name = "Property Encryption")
+public sealed interface BaseKeyEncapsulationService permits KeyEncapsulationService, AsyncKeyEncapsulationService {}

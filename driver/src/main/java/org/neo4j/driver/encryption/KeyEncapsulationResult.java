@@ -52,7 +52,7 @@ public sealed interface KeyEncapsulationResult permits InternalKeyEncapsulationR
     /**
      * Returns the metadata associated with the encapsulated key.
      * <p>
-     * The metadata is provided to the {@link KeyEncapsulationService} when the key is decapsulated.
+     * The metadata is provided to the {@link BaseKeyEncapsulationService} when the key is decapsulated.
      *
      * @return the key metadata
      */

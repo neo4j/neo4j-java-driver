@@ -61,9 +61,9 @@ import org.neo4j.driver.ClientCertificates;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.NotificationClassification;
 import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.KeyEncapsulationServices;
 import org.neo4j.driver.encryption.PropertyEncryptionProfile;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.InternalServerAddress;
@@ -178,7 +178,7 @@ public class NewDriver implements TestkitRequest {
                                 keyGenerator.init(256);
                                 return keyGenerator.generateKey();
                             });
-                    KeyEncapsulationService encapsulationService;
+                    AsyncKeyEncapsulationService encapsulationService;
                     try {
                         encapsulationService = KeyEncapsulationServices.local(masterKey);
                     } catch (NoSuchAlgorithmException e) {

@@ -21,15 +21,16 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import java.util.Objects;
 import javax.crypto.SecretKey;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.internal.encryption.LocalKeyEncapsulationService;
 import org.neo4j.driver.util.Preview;
 
 /**
- * A factory for {@link KeyEncapsulationService} implementations.
+ * A factory for {@link BaseKeyEncapsulationService} implementations.
  * <p>
  * Implementations are not limited to those provided by this factory.
  *
- * @see KeyEncapsulationService
+ * @see BaseKeyEncapsulationService
  * @since 6.3.0
  */
 @Preview(name = "Property Encryption")
@@ -37,7 +38,7 @@ public final class KeyEncapsulationServices {
     private KeyEncapsulationServices() {}
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that uses the provided AES-256 {@link SecretKey} as
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that uses the provided AES-256 {@link SecretKey} as
      * a master key for encapsulating and decapsulating data keys.
      * <p>
      * The encapsulation uses AES-GCM ({@literal "AES/GCM/NoPadding"}) with the provided master key. The resulting
@@ -52,12 +53,12 @@ public final class KeyEncapsulationServices {
      * @return the new key encapsulation service
      * @throws NoSuchAlgorithmException if the required AES algorithm is not available
      */
-    public static KeyEncapsulationService local(SecretKey masterKey) throws NoSuchAlgorithmException {
+    public static AsyncKeyEncapsulationService local(SecretKey masterKey) throws NoSuchAlgorithmException {
         return new LocalKeyEncapsulationService(masterKey, null, null);
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that uses the provided AES-256 {@link SecretKey} as
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that uses the provided AES-256 {@link SecretKey} as
      * a master key for encapsulating and decapsulating data keys.
      * <p>
      * The encapsulation uses AES-GCM ({@literal "AES/GCM/NoPadding"}) with the provided master key. The resulting
@@ -75,8 +76,8 @@ public final class KeyEncapsulationServices {
      * @return the new key encapsulation service
      * @throws NoSuchAlgorithmException if the required AES algorithm is not available
      */
-    public static KeyEncapsulationService local(SecretKey masterKey, Provider provider, SecureRandom ivSecureRandom)
-            throws NoSuchAlgorithmException {
+    public static AsyncKeyEncapsulationService local(
+            SecretKey masterKey, Provider provider, SecureRandom ivSecureRandom) throws NoSuchAlgorithmException {
         Objects.requireNonNull(provider);
         Objects.requireNonNull(ivSecureRandom);
         if (ivSecureRandom.getProvider() != provider) {

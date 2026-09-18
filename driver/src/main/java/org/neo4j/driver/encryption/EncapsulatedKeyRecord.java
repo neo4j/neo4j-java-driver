@@ -24,10 +24,10 @@ import org.neo4j.driver.util.Preview;
  * An encapsulated key with the data required to decapsulate it.
  * <p>
  * Extends {@link EncapsulatedKey} with the key encapsulation and associated metadata required by a
- * {@link KeyEncapsulationService} to decapsulate the key.
+ * {@link BaseKeyEncapsulationService} to decapsulate the key.
  *
  * @see EncapsulatedKey
- * @see KeyEncapsulationService
+ * @see BaseKeyEncapsulationService
  * @since 6.3.0
  */
 @Preview(name = "Property Encryption")

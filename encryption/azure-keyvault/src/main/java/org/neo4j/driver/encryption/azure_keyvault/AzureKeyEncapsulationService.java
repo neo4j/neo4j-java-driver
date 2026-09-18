@@ -31,9 +31,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
 import org.neo4j.driver.encryption.KeyEncapsulationResult;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 
-final class AzureKeyEncapsulationService implements KeyEncapsulationService {
+final class AzureKeyEncapsulationService implements AsyncKeyEncapsulationService {
     private final KeyGenerator keyGenerator;
     private final AzureEncapsulationOptions defaultOptions;
     private final TokenCredential credential;
@@ -50,7 +50,7 @@ final class AzureKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<KeyEncapsulationResult> encapsulate(KeyEncapsulationOptions options) {
+    public CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options) {
         var encapsulationOptions = Objects.requireNonNullElse(options, defaultOptions);
         var kmsKeyId = ((AzureEncapsulationOptionsImpl) encapsulationOptions).keyId();
         var key = keyGenerator.generateKey();
@@ -62,7 +62,7 @@ final class AzureKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<SecretKey> decapsulate(byte[] ciphertext, Map<String, String> metadata) {
+    public CompletionStage<SecretKey> decapsulateAsync(byte[] ciphertext, Map<String, String> metadata) {
         var options = AzureEncapsulationOptionsImpl.of(metadata);
         return clientFor(options.keyId())
                 .decrypt(EncryptionAlgorithm.RSA_OAEP, ciphertext)

@@ -21,13 +21,13 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import javax.crypto.KeyGenerator;
 import org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.KeyEncapsulationServices;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.it.encryption.common.AbstractEnvelopeEncryptionIT;
 
 class EnvelopeEncryptionIT extends AbstractEnvelopeEncryptionIT {
     @Override
-    protected KeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
+    protected AsyncKeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
         var provider = provider();
         var keyGenerator = KeyGenerator.getInstance("AES", provider);
         keyGenerator.init(256);

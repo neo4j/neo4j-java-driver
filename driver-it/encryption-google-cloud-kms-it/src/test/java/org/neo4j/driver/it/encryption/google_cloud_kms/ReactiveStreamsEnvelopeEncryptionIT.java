@@ -19,14 +19,14 @@ package org.neo4j.driver.it.encryption.google_cloud_kms;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.encryption.google_cloud_kms.CloudKeyEncapsulationServices;
 import org.neo4j.driver.it.encryption.common.AbstractReactiveStreamsEnvelopeEncryptionIT;
 
 @ExtendWith(CredentialsCondition.class)
 final class ReactiveStreamsEnvelopeEncryptionIT extends AbstractReactiveStreamsEnvelopeEncryptionIT {
     @Override
-    protected KeyEncapsulationService keyEncapsulationService() throws IOException, NoSuchAlgorithmException {
+    protected AsyncKeyEncapsulationService keyEncapsulationService() throws IOException, NoSuchAlgorithmException {
         return CloudKeyEncapsulationServices.create(OptionsLoader.fromEnv().orElseThrow());
     }
 }

@@ -42,6 +42,8 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
 import org.neo4j.driver.encryption.PropertyEncryptionProfile;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
@@ -585,9 +587,15 @@ class ConfigTest {
     void shouldSetEncryptionProfiles() {
         // Given
         var profiles = Set.of(
-                EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                EnvelopePropertyEncryptionProfile.builder(
+                                "profile-0",
+                                mock(AsyncKeyEncapsulationService.class),
+                                mock(AsyncEncapsulatedKeyRecordRepository.class))
                         .build(),
-                EnvelopePropertyEncryptionProfile.builder("profile-1", mock(), mock())
+                EnvelopePropertyEncryptionProfile.builder(
+                                "profile-1",
+                                mock(AsyncKeyEncapsulationService.class),
+                                mock(AsyncEncapsulatedKeyRecordRepository.class))
                         .build());
         var config = Config.builder()
                 .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new))
@@ -604,9 +612,15 @@ class ConfigTest {
     void shouldRejectDuplicateEncryptionProfileNames() {
         // Given
         var profiles = Set.of(
-                EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                EnvelopePropertyEncryptionProfile.builder(
+                                "profile-0",
+                                mock(AsyncKeyEncapsulationService.class),
+                                mock(AsyncEncapsulatedKeyRecordRepository.class))
                         .build(),
-                EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+                EnvelopePropertyEncryptionProfile.builder(
+                                "profile-0",
+                                mock(AsyncKeyEncapsulationService.class),
+                                mock(AsyncEncapsulatedKeyRecordRepository.class))
                         .build());
 
         // When & Then
@@ -618,7 +632,10 @@ class ConfigTest {
     void shouldRejectNullEncryptionProfileElement() {
         // Given
         var profiles = new HashSet<PropertyEncryptionProfile>();
-        profiles.add(EnvelopePropertyEncryptionProfile.builder("profile-0", mock(), mock())
+        profiles.add(EnvelopePropertyEncryptionProfile.builder(
+                        "profile-0",
+                        mock(AsyncKeyEncapsulationService.class),
+                        mock(AsyncEncapsulatedKeyRecordRepository.class))
                 .build());
         profiles.add(null);
 

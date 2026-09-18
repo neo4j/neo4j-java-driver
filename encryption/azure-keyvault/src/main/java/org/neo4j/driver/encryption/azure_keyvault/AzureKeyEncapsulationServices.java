@@ -20,19 +20,20 @@ import com.azure.security.keyvault.keys.cryptography.CryptographyAsyncClient;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.util.Objects;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.BaseKeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 
 /**
- * A factory for {@link KeyEncapsulationService} implementations using Azure Key Vault.
+ * A factory for {@link BaseKeyEncapsulationService} implementations using Azure Key Vault.
  *
- * @see KeyEncapsulationService
+ * @see BaseKeyEncapsulationService
  * @since 6.3.0
  */
 public final class AzureKeyEncapsulationServices {
     private AzureKeyEncapsulationServices() {}
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
      * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
@@ -47,14 +48,14 @@ public final class AzureKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(AzureEncapsulationOptions defaultOptions)
+    public static AsyncKeyEncapsulationService create(AzureEncapsulationOptions defaultOptions)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);
         return new AzureKeyEncapsulationService(defaultOptions, null, 10);
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
      * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
@@ -71,14 +72,14 @@ public final class AzureKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(AzureEncapsulationOptions defaultOptions, int clientCacheMaxSize)
+    public static AsyncKeyEncapsulationService create(AzureEncapsulationOptions defaultOptions, int clientCacheMaxSize)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);
         return new AzureKeyEncapsulationService(defaultOptions, null, clientCacheMaxSize);
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
      * The supplied {@link Provider} is used for local AES data key generation. Azure Key Vault encrypts and decrypts
@@ -95,7 +96,7 @@ public final class AzureKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(AzureEncapsulationOptions defaultOptions, Provider provider)
+    public static AsyncKeyEncapsulationService create(AzureEncapsulationOptions defaultOptions, Provider provider)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);
         Objects.requireNonNull(provider);
@@ -103,7 +104,7 @@ public final class AzureKeyEncapsulationServices {
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Azure Key Vault to encapsulate and decapsulate those keys.
      * <p>
      * The supplied {@link Provider} is used for local AES data key generation. Azure Key Vault encrypts and decrypts
@@ -122,7 +123,7 @@ public final class AzureKeyEncapsulationServices {
      * @throws NoSuchAlgorithmException when no AES algorithm is found
      * @return the new instance
      */
-    public static KeyEncapsulationService create(
+    public static AsyncKeyEncapsulationService create(
             AzureEncapsulationOptions defaultOptions, Provider provider, int clientCacheMaxSize)
             throws NoSuchAlgorithmException {
         Objects.requireNonNull(defaultOptions);

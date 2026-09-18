@@ -23,23 +23,23 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.encryption.EncapsulatedKey;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
 import org.neo4j.driver.internal.util.Futures;
 
 public abstract class AbstractEncapsulatedKeyManager {
-    private final KeyEncapsulationService keyEncapsulationService;
-    private final EncapsulatedKeyRecordRepository keyRepository;
+    private final AsyncKeyEncapsulationService keyEncapsulationService;
+    private final AsyncEncapsulatedKeyRecordRepository keyRepository;
     private final KeyCache keyCache;
     private final DriverObservationProvider observationProvider;
 
     public AbstractEncapsulatedKeyManager(
-            KeyEncapsulationService keyEncapsulationService,
-            EncapsulatedKeyRecordRepository keyRepository,
+            AsyncKeyEncapsulationService keyEncapsulationService,
+            AsyncEncapsulatedKeyRecordRepository keyRepository,
             KeyCache keyCache,
             DriverObservationProvider observationProvider) {
         this.keyEncapsulationService = Objects.requireNonNull(keyEncapsulationService);
@@ -52,7 +52,7 @@ public abstract class AbstractEncapsulatedKeyManager {
         var encapsulateObservation = observationProvider.keyEncapsulationServiceEncapsulate();
         return observeAsync(encapsulateObservation, () -> {
                     try {
-                        return keyEncapsulationService.encapsulate(encapsulationOptions);
+                        return keyEncapsulationService.encapsulateAsync(encapsulationOptions);
                     } catch (Neo4jException neo4jException) {
                         throw neo4jException;
                     } catch (Exception exception) {
@@ -71,7 +71,7 @@ public abstract class AbstractEncapsulatedKeyManager {
                     var createObservation = observationProvider.encapsulatedKeyRepositoryCreate();
                     return observeAsync(
                                     createObservation,
-                                    () -> keyRepository.create(
+                                    () -> keyRepository.createAsync(
                                             alias, encapsulationResult.encapsulation(), encapsulationResult.metadata()))
                             .thenApply(encapsulatedKeyRecord -> {
                                 keyCache.create(encapsulatedKeyRecord.id(), alias, encapsulationResult.key());
@@ -89,7 +89,7 @@ public abstract class AbstractEncapsulatedKeyManager {
             return CompletableFuture.completedStage(new EncapsulatedKeyRecord(cachedKey.id(), alias));
         }
         var findObservation = observationProvider.encapsulatedKeyRepositoryFindByAlias();
-        return observeAsync(findObservation, () -> keyRepository.findByAlias(alias))
+        return observeAsync(findObservation, () -> keyRepository.findByAliasAsync(alias))
                 .thenApply(encapsulatedKey -> {
                     if (encapsulatedKey == null) {
                         return null;
@@ -102,13 +102,13 @@ public abstract class AbstractEncapsulatedKeyManager {
     public CompletionStage<Void> setAliasByIdAsync(String id, String alias) {
         Objects.requireNonNull(id);
         var setObservation = observationProvider.encapsulatedKeyRepositorySetAliasById();
-        return observeAsync(setObservation, () -> keyRepository.setAliasById(id, alias))
+        return observeAsync(setObservation, () -> keyRepository.setAliasByIdAsync(id, alias))
                 .thenAccept(ignored -> keyCache.setAlias(id, alias));
     }
 
     public CompletionStage<Void> deleteByIdAsync(String id) {
         var deleteObservation = observationProvider.encapsulatedKeyRepositoryDeleteById();
-        return observeAsync(deleteObservation, () -> keyRepository.deleteById(id))
+        return observeAsync(deleteObservation, () -> keyRepository.deleteByIdAsync(id))
                 .thenAccept(ignored -> keyCache.deleteById(id));
     }
 
