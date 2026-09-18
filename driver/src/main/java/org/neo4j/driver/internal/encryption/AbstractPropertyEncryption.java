@@ -39,14 +39,15 @@ public abstract class AbstractPropertyEncryption<T> implements BasePropertyEncry
         if (profileName != null) {
             var handler = nameToHandler.get(profileName);
             if (handler == null) {
-                throw new IllegalStateException("No profile found with name %s".formatted(profileName));
+                throw new IllegalArgumentException("No profile found with name %s".formatted(profileName));
             }
             return handler;
         } else {
             if (nameToHandler.size() == 1) {
                 return nameToHandler.values().iterator().next();
             } else {
-                throw new IllegalStateException("Explicit profile name is required as multiple profiles are available");
+                throw new IllegalArgumentException(
+                        "Explicit profile name is required as multiple profiles are available");
             }
         }
     }

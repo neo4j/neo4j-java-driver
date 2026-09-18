@@ -19,8 +19,10 @@ package neo4j.org.testkit.backend.messages.requests;
 import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.encryption.EncapsulatedKey;
@@ -38,7 +40,7 @@ public class CreateEncapsulatedKey implements TestkitRequest {
         @SuppressWarnings("resource")
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption();
-        var keyManager = encryption.keyManager(data.getProfileName());
+        var keyManager = supplyWithErrorMapping(() -> encryption.keyManager(data.getProfileName()));
         var key = keyManager.create(data.getAlias());
         return createResponse(key);
     }
@@ -48,7 +50,7 @@ public class CreateEncapsulatedKey implements TestkitRequest {
         @SuppressWarnings("resource")
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(AsyncPropertyEncryption.class);
-        var keyManager = encryption.keyManager(data.getProfileName());
+        var keyManager = supplyWithErrorMapping(() -> encryption.keyManager(data.getProfileName()));
         return keyManager.createAsync(data.getAlias()).thenApply(this::createResponse);
     }
 
@@ -57,7 +59,7 @@ public class CreateEncapsulatedKey implements TestkitRequest {
         @SuppressWarnings("resource")
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(ReactivePropertyEncryption.class);
-        var keyManager = encryption.keyManager(data.getProfileName());
+        var keyManager = supplyWithErrorMapping(() -> encryption.keyManager(data.getProfileName()));
         return Mono.fromDirect(flowPublisherToFlux(keyManager.create(data.getAlias())))
                 .map(this::createResponse);
     }
@@ -68,7 +70,7 @@ public class CreateEncapsulatedKey implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption =
                 driver.propertyEncryption(org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption.class);
-        var keyManager = encryption.keyManager(data.getProfileName());
+        var keyManager = supplyWithErrorMapping(() -> encryption.keyManager(data.getProfileName()));
         return Mono.fromDirect(keyManager.create(data.getAlias())).map(this::createResponse);
     }
 
@@ -79,6 +81,14 @@ public class CreateEncapsulatedKey implements TestkitRequest {
                         .alias(key.alias().orElse(null))
                         .build())
                 .build();
+    }
+
+    private <T> T supplyWithErrorMapping(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException e) {
+            throw new CustomDriverError(e);
+        }
     }
 
     @Setter

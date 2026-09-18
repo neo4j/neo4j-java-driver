@@ -21,8 +21,10 @@ import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherValueDeserializer;
@@ -48,7 +50,7 @@ public class EncryptToBytes implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption();
         var request = buildPropertyEncryptionRequest(encryption, data);
-        var encrypted = encryption.encryptToBytes(request);
+        var encrypted = supplyWithErrorMapping(() -> encryption.encryptToBytes(request));
         return createResponse(encrypted);
     }
 
@@ -58,7 +60,8 @@ public class EncryptToBytes implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(AsyncPropertyEncryption.class);
         var request = buildPropertyEncryptionRequest(encryption, data);
-        return encryption.encryptToBytesAsync(request).thenApply(this::createResponse);
+        return supplyWithErrorMapping(() -> encryption.encryptToBytesAsync(request))
+                .thenApply(this::createResponse);
     }
 
     @Override
@@ -67,7 +70,8 @@ public class EncryptToBytes implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(ReactivePropertyEncryption.class);
         var request = buildPropertyEncryptionRequest(encryption, data);
-        return Mono.fromDirect(flowPublisherToFlux(encryption.encryptToBytes(request)))
+        return Mono.fromDirect(flowPublisherToFlux(supplyWithErrorMapping(() -> encryption.encryptToBytes(request))))
+                .onErrorMap(this::mapError)
                 .map(this::createResponse);
     }
 
@@ -78,7 +82,9 @@ public class EncryptToBytes implements TestkitRequest {
         var encryption =
                 driver.propertyEncryption(org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption.class);
         var request = buildPropertyEncryptionRequest(encryption, data);
-        return Mono.fromDirect(encryption.encryptToBytes(request)).map(this::createResponse);
+        return Mono.fromDirect(encryption.encryptToBytes(request))
+                .onErrorMap(this::mapError)
+                .map(this::createResponse);
     }
 
     private PropertyEncryptionRequest buildPropertyEncryptionRequest(
@@ -93,7 +99,7 @@ public class EncryptToBytes implements TestkitRequest {
         } else if (data.getKeyId() != null) {
             request = buildStep.usingKeyId(data.getKeyId()).build();
         } else {
-            throw new IllegalStateException("No key or key alias provided");
+            throw new IllegalArgumentException("No key or key alias provided");
         }
         if (data.getIv() != null) {
             setIV(request, data.getIv());
@@ -117,6 +123,18 @@ public class EncryptToBytes implements TestkitRequest {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private <T> T supplyWithErrorMapping(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException e) {
+            throw (RuntimeException) mapError(e);
+        }
+    }
+
+    private Throwable mapError(Throwable error) {
+        return error instanceof IllegalArgumentException ? new CustomDriverError(error) : error;
     }
 
     @Setter
