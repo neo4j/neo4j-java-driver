@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ENV JAVA_HOME=/usr/lib/jvm/openjdk-26 \
     PYTHON=python3
