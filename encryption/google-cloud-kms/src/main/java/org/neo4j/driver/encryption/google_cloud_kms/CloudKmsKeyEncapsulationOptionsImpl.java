@@ -49,10 +49,10 @@ final class CloudKmsKeyEncapsulationOptionsImpl implements CloudKmsKeyEncapsulat
                 PROJECT,
                 keyName.getProject(),
                 LOCATION,
-                keyName().getLocation(),
+                keyName.getLocation(),
                 KEY_RING,
-                keyName().getKeyRing(),
+                keyName.getKeyRing(),
                 CRYPTO_KEY,
-                keyName().getCryptoKey());
+                keyName.getCryptoKey());
     }
 }

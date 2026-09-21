@@ -109,6 +109,7 @@ abstract class AbstractPropertyRequest {
                 || TYPE_SYSTEM.POINT().isTypeOf(value)
                 || TYPE_SYSTEM.BYTES().isTypeOf(value)
                 || TYPE_SYSTEM.VECTOR().isTypeOf(value)
+                || TYPE_SYSTEM.UUID().isTypeOf(value)
                 || TYPE_SYSTEM.NULL().isTypeOf(value);
     }
 }
