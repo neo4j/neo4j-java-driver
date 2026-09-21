@@ -1,0 +1,158 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package neo4j.org.testkit.backend.messages.requests;
+
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+import lombok.Getter;
+import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
+import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherValueDeserializer;
+import neo4j.org.testkit.backend.messages.responses.EncryptedValue;
+import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.encryption.BasePropertyEncryption;
+import org.neo4j.driver.encryption.PropertyEncryptionRequest;
+import org.neo4j.driver.encryption.async.AsyncPropertyEncryption;
+import org.neo4j.driver.encryption.reactive.ReactivePropertyEncryption;
+import org.neo4j.driver.internal.encryption.InternalPropertyEncryptionRequest;
+import reactor.core.publisher.Mono;
+
+@Setter
+@Getter
+public class EncryptToBytes implements TestkitRequest {
+    private EncryptToBytesBody data;
+
+    @Override
+    public TestkitResponse process(TestkitState testkitState) {
+        @SuppressWarnings("resource")
+        var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
+        var encryption = driver.propertyEncryption();
+        var request = buildPropertyEncryptionRequest(encryption, data);
+        var encrypted = supplyWithErrorMapping(() -> encryption.encryptToBytes(request));
+        return createResponse(encrypted);
+    }
+
+    @Override
+    public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
+        @SuppressWarnings("resource")
+        var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
+        var encryption = driver.propertyEncryption(AsyncPropertyEncryption.class);
+        var request = buildPropertyEncryptionRequest(encryption, data);
+        return supplyWithErrorMapping(() -> encryption.encryptToBytesAsync(request))
+                .thenApply(this::createResponse);
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive(TestkitState testkitState) {
+        @SuppressWarnings("resource")
+        var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
+        var encryption = driver.propertyEncryption(ReactivePropertyEncryption.class);
+        var request = buildPropertyEncryptionRequest(encryption, data);
+        return Mono.fromDirect(flowPublisherToFlux(supplyWithErrorMapping(() -> encryption.encryptToBytes(request))))
+                .onErrorMap(this::mapError)
+                .map(this::createResponse);
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactiveStreams(TestkitState testkitState) {
+        @SuppressWarnings("resource")
+        var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
+        var encryption =
+                driver.propertyEncryption(org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption.class);
+        var request = buildPropertyEncryptionRequest(encryption, data);
+        return Mono.fromDirect(encryption.encryptToBytes(request))
+                .onErrorMap(this::mapError)
+                .map(this::createResponse);
+    }
+
+    private PropertyEncryptionRequest buildPropertyEncryptionRequest(
+            BasePropertyEncryption encryption, EncryptToBytesBody data) {
+        PropertyEncryptionRequest request;
+        var value = Optional.ofNullable(data.getValue()).orElse(Values.NULL);
+        var aadStep = PropertyEncryptionRequest.builder().fromValue(value);
+        var profileStep = data.getAad() != null ? aadStep.withAAD(data.getAad()) : aadStep;
+        var buildStep = data.getProfileName() != null ? profileStep.usingProfile(data.getProfileName()) : profileStep;
+        if (data.getKeyAlias() != null) {
+            request = buildStep.usingKeyAlias(data.getKeyAlias()).build();
+        } else if (data.getKeyId() != null) {
+            request = buildStep.usingKeyId(data.getKeyId()).build();
+        } else {
+            throw new IllegalArgumentException("No key or key alias provided");
+        }
+        if (data.getIv() != null) {
+            setIV(request, data.getIv());
+        }
+        return request;
+    }
+
+    private EncryptedValue createResponse(byte[] encrypted) {
+        return EncryptedValue.builder()
+                .data(EncryptedValue.EncryptedValueBody.builder()
+                        .encryptedBytes(encrypted)
+                        .build())
+                .build();
+    }
+
+    private void setIV(PropertyEncryptionRequest request, byte[] iv) {
+        try {
+            var field = InternalPropertyEncryptionRequest.class.getDeclaredField("iv");
+            field.setAccessible(true);
+            field.set(request, iv);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T> T supplyWithErrorMapping(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException e) {
+            throw (RuntimeException) mapError(e);
+        }
+    }
+
+    private Throwable mapError(Throwable error) {
+        return error instanceof IllegalArgumentException ? new CustomDriverError(error) : error;
+    }
+
+    @Setter
+    @Getter
+    public static class EncryptToBytesBody {
+        private String driverId;
+
+        @JsonDeserialize(using = TestkitCypherValueDeserializer.class)
+        private Value value;
+
+        @JsonDeserialize(using = TestkitCypherValueDeserializer.class)
+        private Value aad;
+
+        private String profileName;
+        private String keyAlias;
+        private String keyId;
+
+        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        private byte[] iv;
+    }
+}

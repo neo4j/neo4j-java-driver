@@ -49,4 +49,11 @@ public @interface Preview {
      * @return the feature name or a reference
      */
     String name();
+
+    /**
+     * Additional feature names or references.
+     *
+     * @return additional feature names or references
+     */
+    String[] additionalNames() default {};
 }

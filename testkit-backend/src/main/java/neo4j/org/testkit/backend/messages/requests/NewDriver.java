@@ -16,12 +16,14 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,13 +33,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AuthTokenUtil;
+import neo4j.org.testkit.backend.CustomDriverError;
+import neo4j.org.testkit.backend.InMemoryEncapsulatedKeyRecordRepository;
 import neo4j.org.testkit.backend.TestkitClock;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
+import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
@@ -52,6 +60,10 @@ import org.neo4j.driver.ClientCertificateManagers;
 import org.neo4j.driver.ClientCertificates;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.NotificationClassification;
+import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
+import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.KeyEncapsulationServices;
+import org.neo4j.driver.encryption.PropertyEncryptionProfile;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalNotificationSeverity;
 import org.neo4j.driver.internal.InternalServerAddress;
@@ -123,6 +135,12 @@ public class NewDriver implements TestkitRequest {
                                 certificateData.getPassword()))
                         .map(ClientCertificateManagers::rotating))
                 .orElse(null);
+        try {
+            configBuilder.withPropertyEncryptionProfiles(
+                    configurePropertyEncryptionProfiles(data.getPropertyEncryptionProfiles()));
+        } catch (IllegalArgumentException e) {
+            throw new CustomDriverError(e);
+        }
         org.neo4j.driver.Driver driver;
         var config = configBuilder.build();
         try {
@@ -140,6 +158,39 @@ public class NewDriver implements TestkitRequest {
         }
         testkitState.addDriverHolder(id, new DriverHolder(driver, config, metrics));
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
+    }
+
+    private PropertyEncryptionProfile[] configurePropertyEncryptionProfiles(Set<EncryptionProfile> profiles) {
+        if (profiles == null) {
+            return null;
+        }
+        return profiles.stream()
+                .map(profile -> {
+                    var masterKey = Optional.ofNullable(profile.getKek())
+                            .map(bytes -> (SecretKey) new SecretKeySpec(bytes, "AES"))
+                            .orElseGet(() -> {
+                                KeyGenerator keyGenerator;
+                                try {
+                                    keyGenerator = KeyGenerator.getInstance("AES");
+                                } catch (NoSuchAlgorithmException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                keyGenerator.init(256);
+                                return keyGenerator.generateKey();
+                            });
+                    KeyEncapsulationService encapsulationService;
+                    try {
+                        encapsulationService = KeyEncapsulationServices.local(masterKey);
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return EnvelopePropertyEncryptionProfile.builder(
+                                    profile.getName(),
+                                    encapsulationService,
+                                    new InMemoryEncapsulatedKeyRecordRepository())
+                            .build();
+                })
+                .toArray(PropertyEncryptionProfile[]::new);
     }
 
     @Override
@@ -300,6 +351,16 @@ public class NewDriver implements TestkitRequest {
         private String clientCertificateProviderId;
         private Long maxConnectionLifetimeMs;
         private boolean disableAutoCommitRetries;
+        private Set<EncryptionProfile> propertyEncryptionProfiles;
+    }
+
+    @Setter
+    @Getter
+    public static class EncryptionProfile {
+        private String name;
+
+        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        private byte[] kek;
     }
 
     @RequiredArgsConstructor

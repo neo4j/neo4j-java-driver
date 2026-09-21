@@ -1,0 +1,241 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.encryption;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.util.Objects;
+import java.util.UUID;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.encryption.InternalPropertyDecryptionRequest;
+import org.neo4j.driver.types.Point;
+import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.util.Preview;
+
+/**
+ * A Neo4j Property decryption request.
+ *
+ * @see PropertyEncryption
+ * @see org.neo4j.driver.encryption.async.AsyncPropertyEncryption
+ * @see org.neo4j.driver.encryption.reactive.ReactivePropertyEncryption
+ * @see org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption
+ * @since 6.3.0
+ */
+@Preview(name = "Property Encryption")
+public interface PropertyDecryptionRequest {
+    /**
+     * Returns a new instance of a build stage for {@link PropertyDecryptionRequest}.
+     *
+     * @return a new instance of a build stage
+     */
+    static Builder.ValueStep builder() {
+        return new InternalPropertyDecryptionRequest();
+    }
+
+    /**
+     * A builder for {@link PropertyEncryptionRequest}.
+     */
+    interface Builder {
+        /**
+         * A builder step for setting value.
+         */
+        interface ValueStep {
+            /**
+             * Sets the value to decrypt.
+             *
+             * @param value the value to decrypt
+             * @return the next builder step
+             */
+            AADStep fromValue(byte[] value);
+        }
+
+        /**
+         * A builder step for setting AAD.
+         */
+        interface AADStep {
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             * <p>
+             * Note that only a subset of types is supported for AAD, they are listed below:
+             * <ul>
+             *     <li>{@link TypeSystem#BOOLEAN()}</li>
+             *     <li>{@link TypeSystem#BYTES()}</li>
+             *     <li>{@link TypeSystem#STRING()} - the value must use the same normalization as the value supplied
+             *     during encryption if it was normalized
+             *     <li>{@link TypeSystem#INTEGER()}</li>
+             *     <li>{@link TypeSystem#POINT()}</li>
+             *     <li>{@link TypeSystem#DATE()}</li>
+             *     <li>{@link TypeSystem#TIME()}</li>
+             *     <li>{@link TypeSystem#LOCAL_TIME()}</li>
+             *     <li>{@link TypeSystem#UUID()}</li>
+             * </ul>
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            BuildStep withAAD(Value aad);
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value
+             * @return the next builder step
+             */
+            default BuildStep withAAD(boolean aad) {
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(LocalDate aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(OffsetTime aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(LocalTime aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value
+             * @return the next builder step
+             */
+            default BuildStep withAAD(double aad) {
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value
+             * @return the next builder step
+             */
+            default BuildStep withAAD(int aad) {
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value
+             * @return the next builder step
+             */
+            default BuildStep withAAD(long aad) {
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(Point aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             * <p>
+             * The value must use the same normalization as the value supplied
+             * during encryption if it was normalized.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(String aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(UUID aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Adds the supplied value as AAD for decryption request.
+             *
+             * @param aad the AAD value, must not be {@literal null}
+             * @return the next builder step
+             */
+            default BuildStep withAAD(byte[] aad) {
+                Objects.requireNonNull(aad);
+                return withAAD(Values.value(aad));
+            }
+
+            /**
+             * Enables using the AAD configuration recorded in the encrypted value metadata.
+             * <p>
+             * If AAD was used during encryption, the persisted AAD is used for decryption.
+             * If no AAD was used during encryption, no effective AAD is used during decryption.
+             * <p>
+             * This option does not bind the encrypted value to an independently supplied external context. If AAD needs
+             * to bind the encrypted value to an external context, use an explicit AAD value using
+             * {@link #withAAD(Value)} or an overloaded variant of it.
+             *
+             * @return the next builder step
+             */
+            BuildStep withoutExternalAAD();
+        }
+
+        /**
+         * A builder step for building {@link PropertyDecryptionRequest}.
+         */
+        interface BuildStep {
+            /**
+             * Builds and returns a new {@link PropertyDecryptionRequest} instance.
+             *
+             * @return the new request instance
+             */
+            PropertyDecryptionRequest build();
+        }
+    }
+}

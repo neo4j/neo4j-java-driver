@@ -82,7 +82,8 @@ public class GetFeatures implements TestkitRequest {
             "Feature:Bolt:HandshakeManifestV1",
             "Feature:API:Type.UnsupportedType",
             "Feature:IdempotentRetries",
-            "Feature:API:Type.UUID"));
+            "Feature:API:Type.UUID",
+            "Feature:API:PropertyEncryption"));
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>(Arrays.asList(
             "Feature:Bolt:3.0",
