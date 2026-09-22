@@ -20,12 +20,12 @@ import java.util.Map;
 import org.neo4j.driver.util.Preview;
 
 /**
- * Options used by a {@link KeyEncapsulationService} to encapsulate a key.
+ * Options used by a {@link BaseKeyEncapsulationService} to encapsulate a key.
  * <p>
- * Implementations of {@link KeyEncapsulationService} are expected to define a dedicated subtype of this interface
+ * Implementations of {@link BaseKeyEncapsulationService} are expected to define a dedicated subtype of this interface
  * containing the options required by the particular key encapsulation mechanism.
  *
- * @see KeyEncapsulationService
+ * @see BaseKeyEncapsulationService
  * @see KeyEncapsulationResult
  * @since 6.3.0
  */

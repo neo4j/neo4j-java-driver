@@ -20,12 +20,14 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.util.Objects;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.BaseKeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.util.Preview;
 
 /**
- * A service responsible for encapsulating and decapsulating keys using Google Cloud KMS.
+ * A factory for {@link BaseKeyEncapsulationService} implementations using Google Cloud KMS.
  *
+ * @see BaseKeyEncapsulationService
  * @since 6.3.0
  */
 @Preview(name = "Property Encryption")
@@ -33,7 +35,7 @@ public final class CloudKeyEncapsulationServices {
     private CloudKeyEncapsulationServices() {}
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Google Cloud KMS to encapsulate and decapsulate those keys.
      * <p>
      * The Java runtime determines and provides the {@link Provider} used for local AES data key generation according to
@@ -48,14 +50,14 @@ public final class CloudKeyEncapsulationServices {
      * @throws IOException when Cloud KMS client fails
      * @return the new instance
      */
-    public static KeyEncapsulationService create(CloudKmsKeyEncapsulationOptions defaultOptions)
+    public static AsyncKeyEncapsulationService create(CloudKmsKeyEncapsulationOptions defaultOptions)
             throws NoSuchAlgorithmException, IOException {
         Objects.requireNonNull(defaultOptions);
         return new CloudKeyEncapsulationService(defaultOptions, null);
     }
 
     /**
-     * Returns a new {@link KeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
+     * Returns a new {@link AsyncKeyEncapsulationService} implementation that generates 256-bit AES data keys locally and
      * uses Google Cloud KMS to encapsulate and decapsulate those keys.
      * <p>
      * The supplied {@link Provider} is used for local AES data key generation. Google Cloud KMS encrypts and decrypts
@@ -70,7 +72,7 @@ public final class CloudKeyEncapsulationServices {
      * @throws IOException when Cloud KMS client fails
      * @return the new instance
      */
-    public static KeyEncapsulationService create(CloudKmsKeyEncapsulationOptions defaultOptions, Provider provider)
+    public static AsyncKeyEncapsulationService create(CloudKmsKeyEncapsulationOptions defaultOptions, Provider provider)
             throws NoSuchAlgorithmException, IOException {
         Objects.requireNonNull(defaultOptions);
         Objects.requireNonNull(provider);

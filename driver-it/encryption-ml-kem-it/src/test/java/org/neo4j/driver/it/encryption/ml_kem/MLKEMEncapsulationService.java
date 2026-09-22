@@ -35,10 +35,10 @@ import org.bouncycastle.jcajce.spec.KEMExtractSpec;
 import org.bouncycastle.jcajce.spec.KEMGenerateSpec;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
 import org.neo4j.driver.encryption.KeyEncapsulationResult;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 
-public final class MLKEMEncapsulationService implements KeyEncapsulationService {
+public final class MLKEMEncapsulationService implements AsyncKeyEncapsulationService {
     private static final int AES_256_KEY_SIZE = 32;
     private static final String ALGORITHM = "ML-KEM";
     private static final String KEY_ALGORITHM = "AES";
@@ -56,7 +56,7 @@ public final class MLKEMEncapsulationService implements KeyEncapsulationService 
     }
 
     @Override
-    public CompletionStage<KeyEncapsulationResult> encapsulate(KeyEncapsulationOptions options) {
+    public CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 var kg = KeyGenerator.getInstance(ALGORITHM, provider);
@@ -78,7 +78,7 @@ public final class MLKEMEncapsulationService implements KeyEncapsulationService 
     }
 
     @Override
-    public CompletionStage<SecretKey> decapsulate(byte[] encapsulation, Map<String, String> metadata) {
+    public CompletionStage<SecretKey> decapsulateAsync(byte[] encapsulation, Map<String, String> metadata) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 var kg = KeyGenerator.getInstance(ALGORITHM, provider);

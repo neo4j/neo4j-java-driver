@@ -18,7 +18,7 @@ package org.neo4j.driver.it.encryption.aws_kms;
 
 import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.encryption.aws_kms.AWSKeyEncapsulationServices;
 import org.neo4j.driver.it.encryption.common.AbstractEnvelopeEncryptionIT;
 
@@ -26,7 +26,7 @@ import org.neo4j.driver.it.encryption.common.AbstractEnvelopeEncryptionIT;
 class EnvelopeEncryptionIT extends AbstractEnvelopeEncryptionIT {
 
     @Override
-    protected KeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
+    protected AsyncKeyEncapsulationService keyEncapsulationService() throws NoSuchAlgorithmException {
         return AWSKeyEncapsulationServices.create(OptionsLoader.fromEnv().orElseThrow());
     }
 }

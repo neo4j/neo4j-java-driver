@@ -29,9 +29,9 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
 
-final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecordRepository {
+final class Neo4jEncapsulatedKeyRecordRepository implements AsyncEncapsulatedKeyRecordRepository {
     private final Driver driver;
     private final SessionConfig sessionConfig;
 
@@ -74,7 +74,7 @@ final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecor
     }
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> findById(String id) {
+    public CompletionStage<EncapsulatedKeyRecord> findByIdAsync(String id) {
         return withSession(session ->
                 session.executeReadAsync(tx -> tx.runAsync("MATCH (key:Key {id: $id}) RETURN key", Map.of("id", id))
                         .thenCompose(ResultCursor::nextAsync)
@@ -82,7 +82,7 @@ final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecor
     }
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> findByAlias(String alias) {
+    public CompletionStage<EncapsulatedKeyRecord> findByAliasAsync(String alias) {
         return withSession(session -> session.executeReadAsync(
                 tx -> tx.runAsync("MATCH (key:Key {alias: $alias}) RETURN key", Map.of("alias", alias))
                         .thenCompose(ResultCursor::nextAsync)
@@ -90,7 +90,7 @@ final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecor
     }
 
     @Override
-    public CompletionStage<EncapsulatedKeyRecord> create(
+    public CompletionStage<EncapsulatedKeyRecord> createAsync(
             String alias, byte[] encapsulation, Map<String, String> metadata) {
 
         var id = UUID.randomUUID().toString();
@@ -103,7 +103,7 @@ final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecor
     }
 
     @Override
-    public CompletionStage<Void> setAliasById(String id, String alias) {
+    public CompletionStage<Void> setAliasByIdAsync(String id, String alias) {
         return withSession(session -> session.executeWriteAsync(tx -> {
             var query = """
                     MATCH (k:Key {id: $id})
@@ -117,7 +117,7 @@ final class Neo4jEncapsulatedKeyRecordRepository implements EncapsulatedKeyRecor
     }
 
     @Override
-    public CompletionStage<Void> deleteById(String id) {
+    public CompletionStage<Void> deleteByIdAsync(String id) {
         return withSession(session ->
                 session.executeWriteAsync(tx -> tx.runAsync("MATCH (key:Key {id: $id}) DELETE key", Map.of("id", id))
                         .thenCompose(ResultCursor::consumeAsync)

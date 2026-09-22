@@ -46,11 +46,11 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.encryption.BasePropertyEncryption;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.PropertyDecryptionRequest;
 import org.neo4j.driver.encryption.PropertyEncryptionRequest;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 import org.neo4j.driver.internal.encryption.AEADEncryptedProperty;
@@ -58,10 +58,10 @@ import org.neo4j.driver.internal.encryption.PackStreamEncoderFactoryLoader;
 
 public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncryption> {
     @Mock
-    KeyEncapsulationService keyEncapsulationService;
+    AsyncKeyEncapsulationService keyEncapsulationService;
 
     @Mock
-    EncapsulatedKeyRecordRepository keyRepository;
+    AsyncEncapsulatedKeyRecordRepository keyRepository;
 
     Driver driver;
 
@@ -122,9 +122,10 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         // GIVEN
         var encapsulateException = new Neo4jException("encapsulate exception");
         switch (failureMode) {
-            case IMMEDIATE -> given(keyEncapsulationService.encapsulate(any())).willThrow(encapsulateException);
+            case IMMEDIATE ->
+                given(keyEncapsulationService.encapsulateAsync(any())).willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.encapsulate(any()))
+                given(keyEncapsulationService.encapsulateAsync(any()))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
 
@@ -139,9 +140,10 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         // GIVEN
         var encapsulateException = new IllegalStateException("decapsulate exception");
         switch (failureMode) {
-            case IMMEDIATE -> given(keyEncapsulationService.encapsulate(any())).willThrow(encapsulateException);
+            case IMMEDIATE ->
+                given(keyEncapsulationService.encapsulateAsync(any())).willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.encapsulate(any()))
+                given(keyEncapsulationService.encapsulateAsync(any()))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
 
@@ -161,19 +163,19 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         var metadata = Map.<String, String>of();
         switch (failureMode) {
             case IMMEDIATE ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
         var encapsulatedKeyRecord = EncapsulatedKeyRecord.of(reference, reference, encapsulation, metadata);
         switch (keyReferenceType) {
             case ID ->
-                given(keyRepository.findById(reference))
+                given(keyRepository.findByIdAsync(reference))
                         .willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
             case ALIAS ->
-                given(keyRepository.findByAlias(reference))
+                given(keyRepository.findByAliasAsync(reference))
                         .willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         }
         var plaintextValue = "plaintext";
@@ -200,19 +202,19 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         var metadata = Map.<String, String>of();
         switch (failureMode) {
             case IMMEDIATE ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
         var encapsulatedKeyRecord = EncapsulatedKeyRecord.of(reference, reference, encapsulation, metadata);
         switch (keyReferenceType) {
             case ID ->
-                given(keyRepository.findById(reference))
+                given(keyRepository.findByIdAsync(reference))
                         .willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
             case ALIAS ->
-                given(keyRepository.findByAlias(reference))
+                given(keyRepository.findByAliasAsync(reference))
                         .willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         }
         var mainProfile = EnvelopePropertyEncryptionProfile.builder("main", keyEncapsulationService, keyRepository)
@@ -243,14 +245,14 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         var metadata = Map.<String, String>of();
         switch (failureMode) {
             case IMMEDIATE ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
         var encapsulatedKeyRecord = EncapsulatedKeyRecord.of(keyId, null, encapsulation, metadata);
-        given(keyRepository.findById(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
+        given(keyRepository.findByIdAsync(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         var decryptionRequest = PropertyDecryptionRequest.builder()
                 .fromValue(encryptedBytes)
                 .withoutExternalAAD()
@@ -270,14 +272,14 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         var metadata = Map.<String, String>of();
         switch (failureMode) {
             case IMMEDIATE ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willThrow(encapsulateException);
             case ASYNC ->
-                given(keyEncapsulationService.decapsulate(encapsulation, metadata))
+                given(keyEncapsulationService.decapsulateAsync(encapsulation, metadata))
                         .willReturn(CompletableFuture.failedStage(encapsulateException));
         }
         var encapsulatedKeyRecord = EncapsulatedKeyRecord.of(keyId, null, encapsulation, metadata);
-        given(keyRepository.findById(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
+        given(keyRepository.findByIdAsync(keyId)).willReturn(CompletableFuture.completedStage(encapsulatedKeyRecord));
         var decryptionRequest = PropertyDecryptionRequest.builder()
                 .fromValue(encryptedBytes)
                 .withoutExternalAAD()

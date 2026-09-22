@@ -35,9 +35,9 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.encryption.BasePropertyEncryption;
 import org.neo4j.driver.encryption.EncapsulatedKey;
 import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.PropertyDecryptionRequest;
 import org.neo4j.driver.encryption.PropertyEncryptionRequest;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -50,7 +50,7 @@ abstract class AbstractBaseEnvelopeEncryptionIT<T extends BasePropertyEncryption
     private static final Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:%s"
             .formatted(Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2025.04.0"))));
 
-    KeyEncapsulationService keyEncapsulationService;
+    AsyncKeyEncapsulationService keyEncapsulationService;
     String keyAlias = "main-key";
     Driver keyDriver;
     Driver driver;
@@ -138,7 +138,8 @@ abstract class AbstractBaseEnvelopeEncryptionIT<T extends BasePropertyEncryption
         driver.close();
     }
 
-    protected abstract KeyEncapsulationService keyEncapsulationService() throws IOException, NoSuchAlgorithmException;
+    protected abstract AsyncKeyEncapsulationService keyEncapsulationService()
+            throws IOException, NoSuchAlgorithmException;
 
     protected abstract Class<T> encryptionClass();
 

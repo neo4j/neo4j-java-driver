@@ -14,19 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.encryption;
+package org.neo4j.driver.encryption.async;
 
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CompletionStage;
 import javax.crypto.SecretKey;
+import org.neo4j.driver.encryption.BaseKeyEncapsulationService;
+import org.neo4j.driver.encryption.KeyEncapsulationOptions;
+import org.neo4j.driver.encryption.KeyEncapsulationResult;
+import org.neo4j.driver.encryption.KeyEncapsulationServices;
 import org.neo4j.driver.util.Preview;
 
 /**
  * A service responsible for encapsulating and decapsulating keys.
  * <p>
- * Implementations may perform blocking operations. The driver adapts synchronous operations to its asynchronous
- * execution model using the {@link #executor()}.
+ * Implementations MUST be non-blocking. In particular, implementations MUST NOT perform blocking operations on
+ * the calling thread.
  * <p>
  * Implementations MUST supply 256-bit AES keys only.
  *
@@ -36,34 +39,21 @@ import org.neo4j.driver.util.Preview;
  * @since 6.3.0
  */
 @Preview(name = "Property Encryption")
-public non-sealed interface KeyEncapsulationService extends BaseKeyEncapsulationService {
+public non-sealed interface AsyncKeyEncapsulationService extends BaseKeyEncapsulationService {
     /**
      * Creates a new key, encapsulates it and returns the result.
      *
      * @param options the encapsulation options
-     * @return the encapsulation result
+     * @return a {@link CompletionStage} that completes with the encapsulation result
      */
-    KeyEncapsulationResult encapsulate(KeyEncapsulationOptions options);
+    CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options);
 
     /**
      * Decapsulates encapsulated bytes.
      *
      * @param encapsulation the encapsulated bytes, must not be {@code null}
      * @param metadata      the key metadata, must not be {@code null}
-     * @return the decapsulated key
+     * @return a {@link CompletionStage} that completes with the decapsulated key
      */
-    SecretKey decapsulate(byte[] encapsulation, Map<String, String> metadata);
-
-    /**
-     * Returns the {@link Executor} used by the driver when adapting this synchronous service to its asynchronous
-     * execution model.
-     * <p>
-     * Implementations performing blocking operations may override this method to provide an executor appropriate for
-     * those operations.
-     *
-     * @return the executor
-     */
-    default Executor executor() {
-        return ForkJoinPool.commonPool();
-    }
+    CompletionStage<SecretKey> decapsulateAsync(byte[] encapsulation, Map<String, String> metadata);
 }

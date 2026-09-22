@@ -22,9 +22,9 @@ import static reactor.adapter.JdkFlowAdapter.publisherToFlowPublisher;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 import org.neo4j.driver.encryption.EncapsulatedKey;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.encryption.reactive.ReactiveEncapsulatedKeyManager;
 import org.neo4j.driver.internal.encryption.AbstractEncapsulatedKeyManager;
 import org.neo4j.driver.internal.encryption.KeyCache;
@@ -36,8 +36,8 @@ final class InternalReactiveEncapsulatedKeyManager extends AbstractEncapsulatedK
     private final DriverObservationProvider observationProvider;
 
     public InternalReactiveEncapsulatedKeyManager(
-            KeyEncapsulationService keyEncapsulationService,
-            EncapsulatedKeyRecordRepository keyRepository,
+            AsyncKeyEncapsulationService keyEncapsulationService,
+            AsyncEncapsulatedKeyRecordRepository keyRepository,
             KeyCache keyCache,
             DriverObservationProvider observationProvider) {
         super(keyEncapsulationService, keyRepository, keyCache, observationProvider);

@@ -26,13 +26,13 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
 import org.neo4j.driver.encryption.KeyEncapsulationResult;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.kms.model.DecryptRequest;
 import software.amazon.awssdk.services.kms.model.EncryptRequest;
 
-final class AWSKeyEncapsulationService implements KeyEncapsulationService {
+final class AWSKeyEncapsulationService implements AsyncKeyEncapsulationService {
     private final KmsAsyncClient kms;
     private final AwsKeyEncapsulationOptions defaultOptions;
     private final KeyGenerator keyGenerator;
@@ -47,7 +47,7 @@ final class AWSKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<KeyEncapsulationResult> encapsulate(KeyEncapsulationOptions options) {
+    public CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options) {
         var encapsulationOptions = Objects.requireNonNullElse(options, defaultOptions);
         var kmsKeyId = ((AwsKeyEncapsulationOptionsImpl) encapsulationOptions).keyId();
         var key = keyGenerator.generateKey();
@@ -61,7 +61,7 @@ final class AWSKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<SecretKey> decapsulate(byte[] ciphertext, Map<String, String> metadata) {
+    public CompletionStage<SecretKey> decapsulateAsync(byte[] ciphertext, Map<String, String> metadata) {
         var options = AwsKeyEncapsulationOptionsImpl.of(metadata);
         var req = DecryptRequest.builder()
                 .keyId(options.keyId())

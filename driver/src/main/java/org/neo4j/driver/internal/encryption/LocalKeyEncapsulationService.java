@@ -34,10 +34,10 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
 import org.neo4j.driver.encryption.KeyEncapsulationResult;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 
-public final class LocalKeyEncapsulationService implements KeyEncapsulationService {
+public final class LocalKeyEncapsulationService implements AsyncKeyEncapsulationService {
     private static final String KEY_ALGORITHM = "AES";
     private static final String CIPHER_TRANSFORMATION = "AES/GCM/NoPadding";
     private final SecretKey masterKey;
@@ -55,7 +55,7 @@ public final class LocalKeyEncapsulationService implements KeyEncapsulationServi
     }
 
     @Override
-    public CompletionStage<KeyEncapsulationResult> encapsulate(KeyEncapsulationOptions options) {
+    public CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options) {
         var dek = keyGenerator.generateKey();
         try {
             var cipher = cipher(provider);
@@ -73,7 +73,7 @@ public final class LocalKeyEncapsulationService implements KeyEncapsulationServi
     }
 
     @Override
-    public CompletionStage<SecretKey> decapsulate(byte[] encapsulation, Map<String, String> metadata) {
+    public CompletionStage<SecretKey> decapsulateAsync(byte[] encapsulation, Map<String, String> metadata) {
         var iv = Base64.getDecoder().decode(metadata.get("iv"));
         try {
             var cipher = cipher(provider);

@@ -21,16 +21,24 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import org.neo4j.driver.encryption.BaseEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.BaseKeyEncapsulationService;
 import org.neo4j.driver.encryption.CacheConfig;
 import org.neo4j.driver.encryption.CryptoContext;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.EnvelopePropertyEncryptionProfile;
 import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
+import org.neo4j.driver.internal.encryption.async.DelegatingAsyncKeyEncapsulationService;
+import org.neo4j.driver.internal.encryption.async.DelegatingEncapsulatedKeyRecordRepository;
 
 public record InternalEnvelopePropertyEncryptionProfile(
         String name,
-        KeyEncapsulationService keyEncapsulationService,
-        EncapsulatedKeyRecordRepository keyRepository,
+        BaseKeyEncapsulationService keyEncapsulationService,
+        AsyncKeyEncapsulationService asyncKeyEncapsulationService,
+        BaseEncapsulatedKeyRecordRepository keyRepository,
+        AsyncEncapsulatedKeyRecordRepository asyncKeyRepository,
         CryptoContext cryptoContextRef,
         CacheConfig keyCacheConfigRef,
         CacheConfig keyAliasCacheConfigRef)
@@ -41,7 +49,9 @@ public record InternalEnvelopePropertyEncryptionProfile(
             throw new IllegalArgumentException("name must not be empty");
         }
         Objects.requireNonNull(keyEncapsulationService);
+        Objects.requireNonNull(asyncKeyEncapsulationService);
         Objects.requireNonNull(keyRepository);
+        Objects.requireNonNull(asyncKeyRepository);
     }
 
     @Override
@@ -61,22 +71,41 @@ public record InternalEnvelopePropertyEncryptionProfile(
 
     public static class Builder implements EnvelopePropertyEncryptionProfile.Builder {
         final String name;
-        final KeyEncapsulationService keyEncapsulationService;
-        final EncapsulatedKeyRecordRepository keyRepository;
+        final BaseKeyEncapsulationService keyEncapsulationService;
+        final AsyncKeyEncapsulationService asyncKeyEncapsulationService;
+        final BaseEncapsulatedKeyRecordRepository keyRepository;
+        final AsyncEncapsulatedKeyRecordRepository asyncKeyRepository;
         CryptoContext cryptoContextRef;
         CacheConfig keyCacheConfigRef = new CacheConfigRecord(100, Duration.ofMinutes(15));
         CacheConfig keyAliasCacheConfigRef = new CacheConfigRecord(100, Duration.ofSeconds(15));
 
         public Builder(
                 String name,
-                KeyEncapsulationService keyEncapsulationService,
-                EncapsulatedKeyRecordRepository keyRepository) {
-            this.name = Objects.requireNonNull(name);
+                BaseKeyEncapsulationService keyEncapsulationService,
+                BaseEncapsulatedKeyRecordRepository keyRepository) {
+            Objects.requireNonNull(name);
             if (name.isEmpty()) {
                 throw new IllegalArgumentException("name must not be empty");
             }
+            this.name = name;
             this.keyEncapsulationService = Objects.requireNonNull(keyEncapsulationService);
+            if (keyEncapsulationService instanceof AsyncKeyEncapsulationService async) {
+                this.asyncKeyEncapsulationService = async;
+            } else if (keyEncapsulationService instanceof KeyEncapsulationService sync) {
+                this.asyncKeyEncapsulationService = new DelegatingAsyncKeyEncapsulationService(sync, sync.executor());
+            } else {
+                throw new IllegalArgumentException("Unsupported key encapsulation service type: %s"
+                        .formatted(keyEncapsulationService.getClass().getName()));
+            }
             this.keyRepository = Objects.requireNonNull(keyRepository);
+            if (keyRepository instanceof AsyncEncapsulatedKeyRecordRepository async) {
+                this.asyncKeyRepository = async;
+            } else if (keyRepository instanceof EncapsulatedKeyRecordRepository sync) {
+                this.asyncKeyRepository = new DelegatingEncapsulatedKeyRecordRepository(sync, sync.executor());
+            } else {
+                throw new IllegalArgumentException("Unsupported key repository type: %s"
+                        .formatted(keyRepository.getClass().getName()));
+            }
         }
 
         @Override
@@ -114,7 +143,9 @@ public record InternalEnvelopePropertyEncryptionProfile(
             return new InternalEnvelopePropertyEncryptionProfile(
                     name,
                     keyEncapsulationService,
+                    asyncKeyEncapsulationService,
                     keyRepository,
+                    asyncKeyRepository,
                     cryptoContextRef,
                     keyCacheConfigRef,
                     keyAliasCacheConfigRef);

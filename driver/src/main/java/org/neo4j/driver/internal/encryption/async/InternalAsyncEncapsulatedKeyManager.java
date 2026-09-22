@@ -21,10 +21,10 @@ import static org.neo4j.driver.internal.observation.util.ObservationUtil.observe
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.encryption.EncapsulatedKey;
-import org.neo4j.driver.encryption.EncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyManager;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.internal.encryption.AbstractEncapsulatedKeyManager;
 import org.neo4j.driver.internal.encryption.KeyCache;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
@@ -34,8 +34,8 @@ final class InternalAsyncEncapsulatedKeyManager extends AbstractEncapsulatedKeyM
     private final DriverObservationProvider observationProvider;
 
     public InternalAsyncEncapsulatedKeyManager(
-            KeyEncapsulationService keyEncapsulationService,
-            EncapsulatedKeyRecordRepository keyRepository,
+            AsyncKeyEncapsulationService keyEncapsulationService,
+            AsyncEncapsulatedKeyRecordRepository keyRepository,
             KeyCache keyCache,
             DriverObservationProvider observationProvider) {
         super(keyEncapsulationService, keyRepository, keyCache, observationProvider);

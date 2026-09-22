@@ -33,6 +33,8 @@ import org.neo4j.driver.encryption.KeyEncapsulationService;
 import org.neo4j.driver.encryption.PropertyDecryptionRequest;
 import org.neo4j.driver.encryption.PropertyEncryption;
 import org.neo4j.driver.encryption.PropertyEncryptionRequest;
+import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.reactivestreams.ReactiveResult;
 
 enum Neo4jDriverDocumentation implements ObservationDocumentation {
@@ -400,7 +402,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link KeyEncapsulationService#encapsulate(KeyEncapsulationOptions)} execution.
+     * Observes {@link AsyncKeyEncapsulationService#encapsulateAsync(KeyEncapsulationOptions)} and
+     * {@link KeyEncapsulationService#encapsulate(KeyEncapsulationOptions)} execution.
      */
     KEY_ENCAPSULATION_SERVICE_ENCAPSULATE {
         @Override
@@ -414,7 +417,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link KeyEncapsulationService#decapsulate(byte[], Map)} execution.
+     * Observes {@link AsyncKeyEncapsulationService#decapsulateAsync(byte[], Map)} and
+     * {@link KeyEncapsulationService#decapsulate(byte[], Map)} execution.
      */
     KEY_ENCAPSULATION_SERVICE_DECAPSULATE {
         @Override
@@ -428,7 +432,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link EncapsulatedKeyRecordRepository#findById(String)} execution.
+     * Observes {@link AsyncEncapsulatedKeyRecordRepository#findByIdAsync(String)} and
+     * {@link EncapsulatedKeyRecordRepository#findById(String)} execution.
      */
     KEY_REPOSITORY_FIND_BY_ID {
         @Override
@@ -442,7 +447,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link EncapsulatedKeyRecordRepository#findByAlias(String)} execution.
+     * Observes {@link AsyncEncapsulatedKeyRecordRepository#findByAliasAsync(String)} and
+     * {@link EncapsulatedKeyRecordRepository#findByAlias(String)} execution.
      */
     KEY_REPOSITORY_FIND_BY_ALIAS {
         @Override
@@ -456,7 +462,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link EncapsulatedKeyRecordRepository#create(String, byte[], Map)} execution.
+     * Observes {@link AsyncEncapsulatedKeyRecordRepository#createAsync(String, byte[], Map)} and
+     * {@link EncapsulatedKeyRecordRepository#create(String, byte[], Map)} execution.
      */
     KEY_REPOSITORY_CREATE {
         @Override
@@ -470,7 +477,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link EncapsulatedKeyRecordRepository#setAliasById(String, String)} execution.
+     * Observes {@link AsyncEncapsulatedKeyRecordRepository#setAliasByIdAsync(String, String)} and
+     * {@link EncapsulatedKeyRecordRepository#setAliasById(String, String)} execution.
      */
     KEY_REPOSITORY_FIND_SET_ALIAS_BY_ID {
         @Override
@@ -484,7 +492,8 @@ enum Neo4jDriverDocumentation implements ObservationDocumentation {
         }
     },
     /**
-     * Observes {@link EncapsulatedKeyRecordRepository#deleteById(String)} execution.
+     * Observes {@link AsyncEncapsulatedKeyRecordRepository#deleteByIdAsync(String)} and
+     * {@link EncapsulatedKeyRecordRepository#deleteById(String)} execution.
      */
     KEY_REPOSITORY_FIND_DELETE_BY_ID {
         @Override

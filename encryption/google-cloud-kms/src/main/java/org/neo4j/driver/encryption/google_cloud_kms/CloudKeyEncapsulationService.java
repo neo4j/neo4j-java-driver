@@ -34,9 +34,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.neo4j.driver.encryption.KeyEncapsulationOptions;
 import org.neo4j.driver.encryption.KeyEncapsulationResult;
-import org.neo4j.driver.encryption.KeyEncapsulationService;
+import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 
-final class CloudKeyEncapsulationService implements KeyEncapsulationService {
+final class CloudKeyEncapsulationService implements AsyncKeyEncapsulationService {
     private final KeyManagementServiceClient keyManagementServiceClient;
     private final CloudKmsKeyEncapsulationOptions defaultOptions;
     private final KeyGenerator keyGenerator;
@@ -51,7 +51,7 @@ final class CloudKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<KeyEncapsulationResult> encapsulate(KeyEncapsulationOptions options) {
+    public CompletionStage<KeyEncapsulationResult> encapsulateAsync(KeyEncapsulationOptions options) {
         var encapsulationOptions = Objects.requireNonNullElse(options, defaultOptions);
         if (encapsulationOptions instanceof CloudKmsKeyEncapsulationOptionsImpl cloudOptions) {
             var key = keyGenerator.generateKey();
@@ -69,7 +69,7 @@ final class CloudKeyEncapsulationService implements KeyEncapsulationService {
     }
 
     @Override
-    public CompletionStage<SecretKey> decapsulate(byte[] encapsulation, Map<String, String> metadata) {
+    public CompletionStage<SecretKey> decapsulateAsync(byte[] encapsulation, Map<String, String> metadata) {
         Objects.requireNonNull(metadata);
         var cloudOptions = CloudKmsKeyEncapsulationOptionsImpl.of(metadata);
         var keyName = cloudOptions.keyName();

@@ -25,9 +25,10 @@ import org.neo4j.driver.util.Preview;
  * {@link EnvelopePropertyEncryptionProfile} requires data keys to exist before they can be used for encryption. This
  * manager provides operations for creating and managing such keys.
  * <p>
- * When creating a key, the manager uses the configured {@link KeyEncapsulationService} to generate and encapsulate a
- * new data key and registers the resulting {@link EncapsulatedKeyRecord} with the configured
- * {@link EncapsulatedKeyRecordRepository}.
+ * When creating a key, the manager uses the configured {@link BaseKeyEncapsulationService} to generate and encapsulate
+ * a new data key and registers the resulting {@link EncapsulatedKeyRecord} with the configured
+ * {@link BaseEncapsulatedKeyRecordRepository}. Both synchronous and asynchronous implementations of these services
+ * are supported.
  *
  * @see org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyManager
  * @see org.neo4j.driver.encryption.reactive.ReactiveEncapsulatedKeyManager
