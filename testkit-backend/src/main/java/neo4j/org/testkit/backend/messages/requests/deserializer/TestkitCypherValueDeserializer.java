@@ -43,6 +43,7 @@ public class TestkitCypherValueDeserializer extends StdDeserializer<Value> {
         super(typeClass);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Value deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         if (!p.isExpectedStartObjectToken()) {
@@ -66,7 +67,13 @@ public class TestkitCypherValueDeserializer extends StdDeserializer<Value> {
             ctxt.reportInputMismatch(this, "Missing 'data' field");
         }
         if ("CypherMap".equals(paramType)) {
-            return deserialize(data.traverse(p.getCodec()), ctxt);
+            var valueNode = data.get("value");
+            if (valueNode == null) {
+                ctxt.reportInputMismatch(this, "Missing 'value' inside 'data'");
+            }
+
+            var map = ctxt.readTreeAsValue(valueNode, Map.class);
+            return Values.value(map);
         }
 
         var javaType = cypherTypeToJavaType(paramType);

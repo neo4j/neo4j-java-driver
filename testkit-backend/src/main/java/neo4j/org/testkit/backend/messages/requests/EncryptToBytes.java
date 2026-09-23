@@ -91,7 +91,12 @@ public class EncryptToBytes implements TestkitRequest {
             BasePropertyEncryption encryption, EncryptToBytesBody data) {
         PropertyEncryptionRequest request;
         var value = Optional.ofNullable(data.getValue()).orElse(Values.NULL);
-        var aadStep = PropertyEncryptionRequest.builder().fromValue(value);
+        PropertyEncryptionRequest.Builder.AADStep aadStep;
+        try {
+            aadStep = PropertyEncryptionRequest.builder().fromValue(value);
+        } catch (IllegalArgumentException e) {
+            throw new CustomDriverError(e);
+        }
         var profileStep = data.getAad() != null ? aadStep.withAAD(data.getAad()) : aadStep;
         var buildStep = data.getProfileName() != null ? profileStep.usingProfile(data.getProfileName()) : profileStep;
         if (data.getKeyAlias() != null) {
