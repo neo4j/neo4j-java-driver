@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.encryption;
 
 import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeAsync;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.scoped;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.util.Futures;
 
 public abstract class AbstractEncapsulatedKeyManager {
@@ -49,6 +51,8 @@ public abstract class AbstractEncapsulatedKeyManager {
     }
 
     public CompletionStage<EncapsulatedKey> createAsync(String alias, KeyEncapsulationOptions encapsulationOptions) {
+        var scopedObservation = observationProvider.scopedObservation();
+        var parentObservation = scopedObservation != null ? scopedObservation : NoopObservation.getInstance();
         var encapsulateObservation = observationProvider.keyEncapsulationServiceEncapsulate();
         return observeAsync(encapsulateObservation, () -> {
                     try {
@@ -67,7 +71,7 @@ public abstract class AbstractEncapsulatedKeyManager {
                         throw new PropertyEncryptionException("Error encapsulating key", throwable);
                     }
                 })
-                .thenCompose(encapsulationResult -> {
+                .thenCompose(encapsulationResult -> scoped(observationProvider, parentObservation, () -> {
                     var createObservation = observationProvider.encapsulatedKeyRepositoryCreate();
                     return observeAsync(
                                     createObservation,
@@ -77,7 +81,7 @@ public abstract class AbstractEncapsulatedKeyManager {
                                 keyCache.create(encapsulatedKeyRecord.id(), alias, encapsulationResult.key());
                                 return encapsulatedKeyRecord;
                             });
-                })
+                }))
                 .thenApply(encapsulatedKey -> new EncapsulatedKeyRecord(
                         encapsulatedKey.id(), encapsulatedKey.alias().orElse(null)));
     }

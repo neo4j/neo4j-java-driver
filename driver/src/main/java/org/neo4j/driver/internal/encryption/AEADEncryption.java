@@ -109,8 +109,7 @@ public final class AEADEncryption {
                 encodedAad,
                 keyId,
                 plaintextValueType,
-                encodedVersion.majorVersion(),
-                encodedVersion.minorVersion());
+                encodedVersion);
     }
 
     Value decrypt(AEADEncryptedProperty encryptedProperty, SecretKey key, Value aad, Provider provider)

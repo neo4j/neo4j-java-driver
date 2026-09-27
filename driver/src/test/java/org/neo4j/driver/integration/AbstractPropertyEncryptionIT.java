@@ -17,7 +17,9 @@
 package org.neo4j.driver.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.openMocks;
@@ -55,6 +57,7 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
 import org.neo4j.driver.internal.encryption.AEADEncryptedProperty;
 import org.neo4j.driver.internal.encryption.PackStreamEncoderFactoryLoader;
+import org.neo4j.driver.types.TypeSystem;
 
 public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncryption> {
     @Mock
@@ -82,31 +85,38 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         driver = GraphDatabase.driver("bolt://localhost:7687", config);
         propertyEncryption = driver.propertyEncryption(propertyEncryptionType());
         keyId = UUID.randomUUID().toString();
-        encryptedBytes = createEncryptedBytes(keyId);
+        encryptedBytes = createEncryptedBytes(createEncryptedProperty(
+                keyId, "NULL", ValueEncodingSchemeVersion.V1_0, ValueEncodingSchemeVersion.V1_0));
     }
 
-    private static byte[] createEncryptedBytes(String keyId) throws IOException {
+    private static byte[] createEncryptedBytes(AEADEncryptedProperty encryptedProperty) throws IOException {
         @SuppressWarnings("deprecation")
         var factory = new PackStreamEncoderFactoryLoader(Logging.none()).factory();
         var encoder = factory.create(Set.of(EncryptedStructureEncoder.getInstance()));
-        var e = new AEADEncryptedProperty(
-                "ENVELOPE",
-                1,
-                "main",
-                new byte[100],
-                new byte[100],
-                new ValueEncoder.Encoded(new byte[100], ValueEncodingSchemeVersion.V1_0),
-                keyId,
-                "NULL",
-                1,
-                0);
         var writeOutput = WriteOutputs.bytes();
-        encoder.encode(e.toEncryptedStruct(), writeOutput);
+        encoder.encode(encryptedProperty.toEncryptedStruct(), writeOutput);
         var bytesOutput = writeOutput.output();
         var encryptedBytes = new byte[bytesOutput.length + 1];
         encryptedBytes[0] = 1;
         System.arraycopy(bytesOutput, 0, encryptedBytes, 1, bytesOutput.length);
         return encryptedBytes;
+    }
+
+    private static AEADEncryptedProperty createEncryptedProperty(
+            String keyId,
+            String typeName,
+            ValueEncodingSchemeVersion typeBaseVersion,
+            ValueEncodingSchemeVersion aadBaseVersion) {
+        return new AEADEncryptedProperty(
+                "ENVELOPE",
+                1,
+                "main",
+                new byte[100],
+                new byte[100],
+                new ValueEncoder.Encoded(new byte[100], aadBaseVersion),
+                keyId,
+                typeName,
+                typeBaseVersion);
     }
 
     @AfterEach
@@ -290,6 +300,52 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         assertEquals(encapsulateException, error.getCause());
     }
 
+    @ParameterizedTest
+    @MethodSource("propertiesWithNewerTypeVersion")
+    void shouldReturnUnsupportedTypeForNewerTypeEncodingVersions(AEADEncryptedProperty encryptedProperty)
+            throws IOException {
+        // GIVEN
+        var encryptedBytes = createEncryptedBytes(encryptedProperty);
+        var decryptionRequest = PropertyDecryptionRequest.builder()
+                .fromValue(encryptedBytes)
+                .withoutExternalAAD()
+                .build();
+
+        // WHEN
+        var value = decrypt(decryptionRequest);
+
+        // THEN
+        assertTrue(TypeSystem.getDefault().UNSUPPORTED().isTypeOf(value));
+        var unsupported = value.asUnsupportedType();
+        assertEquals(encryptedProperty.typeName(), unsupported.name());
+        assertEquals(
+                "%d.%d"
+                        .formatted(
+                                encryptedProperty.typeBaseVersion().majorVersion(),
+                                encryptedProperty.typeBaseVersion().minorVersion()),
+                unsupported.minProtocolVersion());
+        assertFalse(unsupported.message().orElseThrow().isEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("propertiesWithNewerAADVersion")
+    void shouldThrowOnNewerAADEncodingVersions(AEADEncryptedProperty encryptedProperty) throws IOException {
+        // GIVEN
+        var encryptedBytes = createEncryptedBytes(encryptedProperty);
+        var decryptionRequest = PropertyDecryptionRequest.builder()
+                .fromValue(encryptedBytes)
+                .withAAD("shouldThrowBeforeThis")
+                .build();
+
+        // WHEN & THEN
+        var error = assertThrows(PropertyEncryptionException.class, () -> decrypt(decryptionRequest));
+        assertTrue(error.getMessage()
+                .contains("%d.%d"
+                        .formatted(
+                                encryptedProperty.encodedAad().baseVersion().majorVersion(),
+                                encryptedProperty.encodedAad().baseVersion().minorVersion())));
+    }
+
     protected abstract Class<T> propertyEncryptionType();
 
     protected abstract byte[] encryptToBytes(PropertyEncryptionRequest request);
@@ -304,6 +360,28 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
                 Arguments.of(KeyReferenceType.ID, FailureMode.ASYNC),
                 Arguments.of(KeyReferenceType.ALIAS, FailureMode.IMMEDIATE),
                 Arguments.of(KeyReferenceType.ALIAS, FailureMode.ASYNC));
+    }
+
+    private static Stream<Arguments> propertiesWithNewerTypeVersion() {
+        return Stream.of(
+                Arguments.of(createEncryptedProperty(
+                        "keyId", "FUTURE_TYPE", new ValueEncodingSchemeVersion(1, 1), ValueEncodingSchemeVersion.V1_0)),
+                Arguments.of(createEncryptedProperty(
+                        "keyId",
+                        "FUTURE_TYPE",
+                        new ValueEncodingSchemeVersion(2, 0),
+                        ValueEncodingSchemeVersion.V1_0)));
+    }
+
+    private static Stream<Arguments> propertiesWithNewerAADVersion() {
+        return Stream.of(
+                Arguments.of(createEncryptedProperty(
+                        "keyId", "FUTURE_TYPE", ValueEncodingSchemeVersion.V1_0, new ValueEncodingSchemeVersion(1, 1))),
+                Arguments.of(createEncryptedProperty(
+                        "keyId",
+                        "FUTURE_TYPE",
+                        ValueEncodingSchemeVersion.V1_0,
+                        new ValueEncodingSchemeVersion(2, 0))));
     }
 
     enum KeyReferenceType {
