@@ -17,6 +17,7 @@
 package org.neo4j.driver.internal.encryption;
 
 import static org.neo4j.driver.internal.observation.util.ObservationUtil.observeAsync;
+import static org.neo4j.driver.internal.observation.util.ObservationUtil.scoped;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -33,8 +34,11 @@ import org.neo4j.driver.encryption.async.AsyncEncapsulatedKeyRecordRepository;
 import org.neo4j.driver.encryption.async.AsyncKeyEncapsulationService;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.PropertyEncryptionException;
+import org.neo4j.driver.internal.InternalUnsupportedType;
 import org.neo4j.driver.internal.observation.DriverObservationProvider;
+import org.neo4j.driver.internal.observation.NoopObservation;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 
 public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHandler {
     public static final String PROFILE_TYPE = "ENVELOPE";
@@ -105,6 +109,26 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
             throw new PropertyEncryptionException("Unsupported profile version %d for profile type %s"
                     .formatted(encryptedProperty.profileVersion(), encryptedProperty.profileType()));
         }
+        var typeBaseVersion = encryptedProperty.typeBaseVersion();
+        if (typeBaseVersion.majorVersion() != 1 || typeBaseVersion.minorVersion() > 0) {
+            var minVersion = "%d.%d".formatted(typeBaseVersion.majorVersion(), typeBaseVersion.minorVersion());
+            var message =
+                    "The encrypted value requires Bolt Value Encoding Scheme version %s, but this driver supports 1.0 only"
+                            .formatted(minVersion);
+            return CompletableFuture.completedStage(new UnsupportedTypeValue(
+                    new InternalUnsupportedType(encryptedProperty.typeName(), minVersion, message)));
+        }
+        var encodedAad = encryptedProperty.encodedAad();
+        if (decryptionRequest.aad != null && encodedAad != null) {
+            var aadBaseVersion = encodedAad.baseVersion();
+            if (aadBaseVersion.majorVersion() != 1 || aadBaseVersion.minorVersion() > 0) {
+                var minVersion = "%d.%d".formatted(aadBaseVersion.majorVersion(), aadBaseVersion.minorVersion());
+                var message =
+                        "The AAD requires Bolt Value Encoding Scheme version %s, but this driver supports 1.0 only"
+                                .formatted(minVersion);
+                throw new PropertyEncryptionException(message);
+            }
+        }
         return getKey(encryptedProperty.keyId()).thenApply(dek -> {
             try {
                 return aeadEncryption.decrypt(encryptedProperty, dek, decryptionRequest.aad, provider);
@@ -137,6 +161,9 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                 if (cachedKey != null) {
                     return CompletableFuture.completedStage(new KeyData(cachedKey.id(), cachedKey.key()));
                 } else {
+                    var scopedObservation = observationProvider.scopedObservation();
+                    var parentObservation =
+                            scopedObservation != null ? scopedObservation : NoopObservation.getInstance();
                     var findObservation = observationProvider.encapsulatedKeyRepositoryFindById();
                     return observeAsync(findObservation, () -> keyRepository.findByIdAsync(id))
                             .thenApply(encapsulatedKeyRecord -> {
@@ -145,7 +172,8 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                                 }
                                 return encapsulatedKeyRecord;
                             })
-                            .thenCompose(this::decapsulate);
+                            .thenCompose(record ->
+                                    scoped(observationProvider, parentObservation, () -> decapsulate(record)));
                 }
             } else {
                 if (request.encryptionKeyAlias != null) {
@@ -154,6 +182,9 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                     if (cachedKey != null) {
                         return CompletableFuture.completedStage(new KeyData(cachedKey.id(), cachedKey.key()));
                     } else {
+                        var scopedObservation = observationProvider.scopedObservation();
+                        var parentObservation =
+                                scopedObservation != null ? scopedObservation : NoopObservation.getInstance();
                         var findObservation = observationProvider.encapsulatedKeyRepositoryFindByAlias();
                         return observeAsync(findObservation, () -> keyRepository.findByAliasAsync(alias))
                                 .thenCompose(encapsulatedKeyRecord -> {
@@ -163,7 +194,10 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                                     }
                                     var cachedKeyById = keyCache.findById(encapsulatedKeyRecord.id());
                                     return (cachedKeyById == null)
-                                            ? decapsulate(encapsulatedKeyRecord)
+                                            ? scoped(
+                                                    observationProvider,
+                                                    parentObservation,
+                                                    () -> decapsulate(encapsulatedKeyRecord))
                                             : CompletableFuture.completedStage(cachedKeyById);
                                 });
                     }
@@ -212,6 +246,8 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
         if (cachedKey != null) {
             return CompletableFuture.completedStage(cachedKey.key());
         } else {
+            var scopedObservation = observationProvider.scopedObservation();
+            var parentObservation = scopedObservation != null ? scopedObservation : NoopObservation.getInstance();
             var findObservation = observationProvider.encapsulatedKeyRepositoryFindById();
             var keyRecordStage = observeAsync(findObservation, () -> keyRepository.findByIdAsync(keyId))
                     .thenApply(encapsulatedKeyRecord -> {
@@ -220,7 +256,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                         }
                         return encapsulatedKeyRecord;
                     });
-            return keyRecordStage.thenCompose(encapsulatedKey -> {
+            return keyRecordStage.thenCompose(encapsulatedKey -> scoped(observationProvider, parentObservation, () -> {
                 try {
                     var decapsulateObservation = observationProvider.keyEncapsulationServiceDecapsulate();
                     return observeAsync(
@@ -247,7 +283,7 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
                 } catch (Exception e) {
                     throw new PropertyEncryptionException("Failed to decapsulate key", e);
                 }
-            });
+            }));
         }
     }
 

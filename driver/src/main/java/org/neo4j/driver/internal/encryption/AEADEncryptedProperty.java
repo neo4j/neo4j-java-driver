@@ -35,8 +35,7 @@ public record AEADEncryptedProperty(
         ValueEncoder.Encoded encodedAad,
         String keyId,
         String typeName,
-        long typeEncodingSchemeMajor,
-        long typeEncodingSchemeMinor) {
+        ValueEncodingSchemeVersion typeBaseVersion) {
     private static final Comparator<String> UTF8_COMPARATOR =
             (a, b) -> Arrays.compareUnsigned(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
     private static final String IV = "iv";
@@ -62,8 +61,8 @@ public record AEADEncryptedProperty(
                 profileName,
                 cipherOutput,
                 typeName,
-                typeEncodingSchemeMajor,
-                typeEncodingSchemeMinor,
+                typeBaseVersion.majorVersion(),
+                typeBaseVersion.minorVersion(),
                 metadata);
     }
 
@@ -92,7 +91,7 @@ public record AEADEncryptedProperty(
                 encodedAad,
                 keyId,
                 encryptedStruct.typeName(),
-                encryptedStruct.typeEncodingSchemeMajor(),
-                encryptedStruct.typeEncodingSchemeMinor());
+                new ValueEncodingSchemeVersion((int) encryptedStruct.typeEncodingSchemeMajor(), (int)
+                        encryptedStruct.typeEncodingSchemeMinor()));
     }
 }
