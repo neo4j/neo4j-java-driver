@@ -78,6 +78,101 @@ public class StartTest implements TestkitRequest {
                 "^stub\\.summary\\.test_summary\\.TestSummaryBasicInfoDiscard\\.test_times$",
                 "Driver sets summary's resultAvailableAfter to -1 on discard");
 
+        // Query API
+        skipMessage = "Driver does not support partial results with failure";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_auth_token_manager\\.TestAuthTokenManager\\.test_error_session_run_with_records$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_auth_token_manager\\.TestAuthTokenManager\\.test_error_explicit_tx_with_records$",
+                skipMessage);
+        skipMessage = "Driver does not currently support successful RUN on failed HTTP status code";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_auth_token_manager\\.TestAuthTokenManager\\.test_error_session_run_with_header",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_auth_token_manager\\.TestAuthTokenManager\\.test_error_explicit_tx_with_headers",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_explicit_tx_with_headers$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_explicit_tx_with_records$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_session_run_with_header$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_session_run_with_records$", skipMessage);
+        skipMessage = "Driver throws on run";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_tx_func_with_headers$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_tx_func_with_records$", skipMessage);
+        skipMessage = "Driver takes first error from the list";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_errors\\.TestErrors\\.test_only_last_error_is_considered$", skipMessage);
+        skipMessage = "Driver does not do database name validation";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_config\\.TestDatabase\\.test_database$", skipMessage);
+        skipMessage = "Driver parses some durations differently, this is not unique to Query API implementation";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.datatypes\\.test_temporal\\.TestTemporal\\.test_duration$", skipMessage);
+        skipMessage = "Driver handles z=NaN differently";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.datatypes\\.test_spatial\\.TestSpatial\\.test_point$", skipMessage);
+        skipMessage = "Some values start without a plus sign, Java parsing does not accept it";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.datatypes\\.test_temporal\\.TestTemporal\\.test_local_date_time$", skipMessage);
+        skipMessage = "There is a mismatch on how Offset and Zoned are handled";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.datatypes\\.test_temporal\\.TestTemporal\\.test_zoned_date_time_formats$",
+                skipMessage);
+        skipMessage = "Has offset that Java does not accept";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.datatypes\\.test_temporal\\.TestTemporal\\.test_zoned_time$", skipMessage);
+        skipMessage = "Driver calculates containsUpdates from other counters, this is not specific to Query API";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_summary\\.TestSummaryCounters\\.test_empty_default_session_run",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_summary\\.TestSummaryCounters\\.test_empty_default_tx$", skipMessage);
+        skipMessage = "GQL polyfill not supported";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_summary\\.TestSummaryNotifications\\.test_session_notification_1$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_summary\\.TestSummaryNotifications\\.test_tx_notification_1$", skipMessage);
+        skipMessage = "The driver sends user agent";
+        COMMON_SKIP_PATTERN_TO_REASON.put("^stub\\.http_query\\.test_config\\.TestUserAgent\\..*$", skipMessage);
+        skipMessage = "Driver accepts 202 on commit endpoint as success";
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^stub\\.http_query\\.test_retries\\.TestRetries\\.test_no_retry_on_disconnect_on_commit$",
+                skipMessage);
+        skipMessage = "Not implemented";
+        COMMON_SKIP_PATTERN_TO_REASON.put("^stub\\.http_query\\.test_summary\\.TestSummaryPlan\\..*$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^stub\\.http_query\\.test_summary\\.TestSummaryProfile\\..*$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put("^stub\\.http_query\\.test_path_prefix\\.TestPathPrefix\\..*$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.test_summary\\.TestSummary\\.test_can_obtain_plan_info$", skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.test_summary\\.TestSummary\\.test_can_obtain_profile_info$", skipMessage);
+        // off until further investigation
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\.test_cypher_created_duration$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\.test_should_echo_temporal_type$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\.test_cypher_created_datetime$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\.test_date_time_cypher_created_tz_id$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.datatypes\\.test_temporal_types\\.TestDataTypes\\.test_should_echo_all_timezone_ids$",
+                skipMessage);
+        COMMON_SKIP_PATTERN_TO_REASON.put(
+                "^neo4j\\.test_session_run\\.TestSessionRun\\.test_recover_from_fail_on_streaming$", skipMessage);
+
         SYNC_SKIP_PATTERN_TO_REASON.putAll(COMMON_SKIP_PATTERN_TO_REASON);
         skipMessage =
                 "Background handling of pipelined PULL failure might result in manager notification response being sent before respective Testkit request";

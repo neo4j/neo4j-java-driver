@@ -45,7 +45,7 @@ import neo4j.org.testkit.backend.InMemoryEncapsulatedKeyRecordRepository;
 import neo4j.org.testkit.backend.TestkitClock;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
-import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
@@ -359,7 +359,7 @@ public class NewDriver implements TestkitRequest {
     public static class EncryptionProfile {
         private String name;
 
-        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        @JsonDeserialize(using = TestkitCypherBytesDeserializer.class)
         private byte[] kek;
     }
 

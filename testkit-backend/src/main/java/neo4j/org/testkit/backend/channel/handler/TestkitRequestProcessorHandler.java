@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.FrontendError;
@@ -44,11 +43,12 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     private final TestkitState testkitState;
     private final BiFunction<TestkitRequest, TestkitState, CompletionStage<TestkitResponse>> processorImpl;
     // Some requests require multiple threads
-    private final Executor requestExecutorService = Executors.newFixedThreadPool(10);
+    private final Executor requestExecutorService;
     private final ResponseQueueHanlder responseQueueHanlder;
     private Channel channel;
 
-    public TestkitRequestProcessorHandler(BackendMode backendMode, ResponseQueueHanlder responseQueueHanlder) {
+    public TestkitRequestProcessorHandler(
+            BackendMode backendMode, ResponseQueueHanlder responseQueueHanlder, Executor requestExecutorService) {
         switch (backendMode) {
             case ASYNC -> processorImpl = TestkitRequest::processAsync;
             case REACTIVE ->
@@ -58,6 +58,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         }
         testkitState = new TestkitState(this::writeAndFlush);
         this.responseQueueHanlder = responseQueueHanlder;
+        this.requestExecutorService = requestExecutorService;
     }
 
     @Override

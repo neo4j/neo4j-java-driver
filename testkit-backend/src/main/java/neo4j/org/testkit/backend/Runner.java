@@ -23,6 +23,9 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageInboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitMessageOutboundHandler;
 import neo4j.org.testkit.backend.channel.handler.TestkitRequestProcessorHandler;
@@ -32,9 +35,19 @@ public class Runner {
     public static void main(String[] args) throws InterruptedException {
         var backendMode = getBackendMode(args);
 
+        var threadCounter = new AtomicInteger(0);
+        var requestExecutorService =
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), runnable -> {
+                    var thread = new Thread(
+                            runnable, "neo4j-testkit-request-executor-%d".formatted(threadCounter.getAndIncrement()));
+                    thread.setDaemon(true);
+                    return thread;
+                });
+
         EventLoopGroup group = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         try {
             var bootstrap = new ServerBootstrap();
+
             bootstrap
                     .group(group)
                     .channel(NioServerSocketChannel.class)
@@ -47,13 +60,24 @@ public class Runner {
                             channel.pipeline().addLast(new TestkitMessageOutboundHandler());
                             channel.pipeline().addLast(new TestkitRequestResponseMapperHandler(responseQueueHanlder));
                             channel.pipeline()
-                                    .addLast(new TestkitRequestProcessorHandler(backendMode, responseQueueHanlder));
+                                    .addLast(new TestkitRequestProcessorHandler(
+                                            backendMode, responseQueueHanlder, requestExecutorService));
                         }
                     });
             var server = bootstrap.bind().sync();
             server.channel().closeFuture().sync();
         } finally {
-            group.shutdownGracefully().sync();
+            requestExecutorService.shutdown();
+            try {
+                if (!requestExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    requestExecutorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                requestExecutorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            } finally {
+                group.shutdownGracefully().sync();
+            }
         }
     }
 

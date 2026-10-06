@@ -18,21 +18,33 @@ package neo4j.org.testkit.backend.messages.requests.deserializer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import java.io.Serial;
 
-public class HexByteArrayDeserializer extends JsonDeserializer<byte[]> {
+public class TestkitCypherBytesDeserializer extends StdDeserializer<byte[]> {
+
+    @Serial
+    private static final long serialVersionUID = 3489940766207129614L;
+
+    public TestkitCypherBytesDeserializer() {
+        super(byte[].class);
+    }
+
     @Override
     public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         var value = p.getValueAsString().replaceAll("\\s+", "");
+
         if ((value.length() & 1) != 0) {
             throw new JsonMappingException(p, "Hex string must have an even length");
         }
+
         var result = new byte[value.length() / 2];
         for (var i = 0; i < result.length; i++) {
             result[i] = (byte) Integer.parseInt(value.substring(i * 2, i * 2 + 2), 16);
         }
+
         return result;
     }
 }

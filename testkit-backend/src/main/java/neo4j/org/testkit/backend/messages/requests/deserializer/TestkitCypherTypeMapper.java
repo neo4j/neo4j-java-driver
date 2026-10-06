@@ -28,6 +28,7 @@ public class TestkitCypherTypeMapper {
         var token = p.currentToken();
         while (token == JsonToken.FIELD_NAME
                 || token == JsonToken.VALUE_NUMBER_INT
+                || token == JsonToken.VALUE_NUMBER_FLOAT
                 || token == JsonToken.VALUE_STRING) {
             if (token == JsonToken.VALUE_NUMBER_INT) {
                 var field = p.currentName();
@@ -35,13 +36,37 @@ public class TestkitCypherTypeMapper {
                     setField(data, field, p.getLongValue());
                 } else if (fieldIsType(data, field, Integer.class)) {
                     setField(data, field, p.getIntValue());
+                } else if (fieldIsType(data, field, Double.class)) {
+                    setField(data, field, p.getDoubleValue());
+                } else if (fieldIsType(data, field, Float.class)) {
+                    setField(data, field, p.getFloatValue());
+                } else {
+                    throw new RuntimeException("Unhandled field type: " + field);
+                }
+            } else if (token == JsonToken.VALUE_NUMBER_FLOAT) {
+                var field = p.currentName();
+                if (fieldIsType(data, field, Double.class)) {
+                    setField(data, field, p.getDoubleValue());
+                } else if (fieldIsType(data, field, Float.class)) {
+                    setField(data, field, p.getFloatValue());
                 } else {
                     throw new RuntimeException("Unhandled field type: " + field);
                 }
             } else if (token == JsonToken.VALUE_STRING) {
                 var field = p.currentName();
                 var value = p.getValueAsString();
-                setField(data, field, value);
+                if (fieldIsType(data, field, Double.class)) {
+                    var number =
+                            switch (value) {
+                                case "-Infinity" -> Double.NEGATIVE_INFINITY;
+                                case "+Infinity" -> Double.POSITIVE_INFINITY;
+                                case "NaN" -> Double.NaN;
+                                default -> throw new RuntimeException("Unknown value: " + value);
+                            };
+                    setField(data, field, number);
+                } else {
+                    setField(data, field, value);
+                }
             }
             token = p.nextToken();
         }

@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherValueDeserializer;
 import neo4j.org.testkit.backend.messages.responses.DecryptedValue;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -97,7 +97,7 @@ public class Decrypt implements TestkitRequest {
     public static class DecryptBody {
         private String driverId;
 
-        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        @JsonDeserialize(using = TestkitCypherBytesDeserializer.class)
         private byte[] value;
 
         @JsonDeserialize(using = TestkitCypherValueDeserializer.class)

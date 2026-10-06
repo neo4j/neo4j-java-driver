@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j.driver</groupId>
   <artifactId>neo4j-java-driver-parent</artifactId>
-  <version>6.3-SNAPSHOT</version>
+  <version>6.4-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
@@ -35,7 +35,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>12.1.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>12.2.1</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
@@ -74,6 +74,7 @@
     <module>bom</module>
     <module>driver</module>
     <module>bundle</module>
+    <module>query-api</module>
     <module>observation</module>
     <module>encryption</module>
     <module>driver-it</module>

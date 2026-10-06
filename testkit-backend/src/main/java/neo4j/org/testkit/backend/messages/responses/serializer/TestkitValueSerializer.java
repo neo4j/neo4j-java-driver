@@ -44,7 +44,12 @@ public class TestkitValueSerializer extends StdSerializer<Value> {
         } else if (InternalTypeSystem.TYPE_SYSTEM.INTEGER().isTypeOf(value)) {
             cypherObject(gen, "CypherInt", value.asLong());
         } else if (InternalTypeSystem.TYPE_SYSTEM.FLOAT().isTypeOf(value)) {
-            cypherObject(gen, "CypherFloat", value.asDouble());
+            var val = value.asDouble();
+            if (Double.POSITIVE_INFINITY == val) {
+                cypherObject(gen, "CypherFloat", "+Infinity");
+            } else {
+                cypherObject(gen, "CypherFloat", value.asDouble());
+            }
         } else if (InternalTypeSystem.TYPE_SYSTEM.STRING().isTypeOf(value)) {
             cypherObject(gen, "CypherString", value.asString());
         } else if (InternalTypeSystem.TYPE_SYSTEM.UUID().isTypeOf(value)) {

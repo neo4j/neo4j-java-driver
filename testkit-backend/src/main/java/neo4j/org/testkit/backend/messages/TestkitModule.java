@@ -20,9 +20,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.Serial;
 import java.time.LocalDate;
 import java.util.List;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDateDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDateTimeDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherDurationDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherPointDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherTimeDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherVectorDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitListDeserializer;
@@ -37,6 +39,7 @@ import neo4j.org.testkit.backend.messages.responses.serializer.TestkitLocalTimeV
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitMapValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitNodeValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitPathValueSerializer;
+import neo4j.org.testkit.backend.messages.responses.serializer.TestkitPointSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRecordSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRelationshipValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitTimeValueSerializer;
@@ -54,11 +57,13 @@ import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.internal.value.UnsupportedTypeValue;
 import org.neo4j.driver.internal.value.VectorValue;
 import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Vector;
 
 public class TestkitModule extends SimpleModule {
@@ -73,6 +78,8 @@ public class TestkitModule extends SimpleModule {
         this.addDeserializer(IsoDuration.class, new TestkitCypherDurationDeserializer());
         this.addDeserializer(LocalDate.class, new TestkitCypherDateDeserializer());
         this.addDeserializer(Vector.class, new TestkitCypherVectorDeserializer());
+        this.addDeserializer(byte[].class, new TestkitCypherBytesDeserializer());
+        this.addDeserializer(Point.class, new TestkitCypherPointDeserializer());
 
         this.addSerializer(Value.class, new TestkitValueSerializer());
         this.addSerializer(NodeValue.class, new TestkitNodeValueSerializer());
@@ -89,5 +96,6 @@ public class TestkitModule extends SimpleModule {
         this.addSerializer(RelationshipValue.class, new TestkitRelationshipValueSerializer());
         this.addSerializer(VectorValue.class, new TestkitVectorSerializer());
         this.addSerializer(UnsupportedTypeValue.class, new TestkitUnsupportedTypeValueSerializer());
+        this.addSerializer(PointValue.class, new TestkitPointSerializer());
     }
 }
