@@ -27,6 +27,7 @@ import lombok.AllArgsConstructor;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
 import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Vector;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -77,6 +78,15 @@ public final class GenUtils {
         gen.writeNumber(nano);
     }
 
+    public static void writePoint(JsonGenerator gen, String system, double x, double y, double z) throws IOException {
+        gen.writeStringField("system", system);
+        gen.writeNumberField("x", x);
+        gen.writeNumberField("y", y);
+        if (!Double.isNaN(z)) {
+            gen.writeNumberField("z", z);
+        }
+    }
+
     public static Class<?> cypherTypeToJavaType(String typeString) {
         return switch (typeString) {
             case "CypherBool" -> Boolean.class;
@@ -92,6 +102,7 @@ public final class GenUtils {
             case "CypherVector" -> Vector.class;
             case "CypherUUID" -> UUID.class;
             case "CypherBytes" -> byte[].class;
+            case "CypherPoint" -> Point.class;
             default -> null;
         };
     }

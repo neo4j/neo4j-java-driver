@@ -34,6 +34,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.neo4j.bolt</groupId>
+            <artifactId>neo4j-bolt-connection-query-api</artifactId>
+            <version>${neo4j-bolt-connection-bom.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
         </dependency>
@@ -87,6 +92,7 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>neo4j.org.testkit.backend.Runner</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                             <finalName>testkit-backend</finalName>
                         </configuration>
