@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import lombok.Setter;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.types.IsoDuration;
 
@@ -41,7 +42,8 @@ public class TestkitCypherDurationDeserializer extends StdDeserializer<IsoDurati
         return new InternalIsoDuration(data.months, data.days, data.seconds, data.nanoseconds);
     }
 
-    private static final class CypherDurationData {
+    @Setter
+    public static final class CypherDurationData {
         Long months;
         Long days;
         Long seconds;

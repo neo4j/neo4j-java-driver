@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import lombok.Setter;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
 
 public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDateTime> {
@@ -50,7 +51,8 @@ public class TestkitCypherDateTimeDeserializer extends StdDeserializer<CypherDat
                 data.utc_offset_s);
     }
 
-    private static final class CypherDateTimeData {
+    @Setter
+    public static final class CypherDateTimeData {
         Integer year;
         Integer month;
         Integer day;

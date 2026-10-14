@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import lombok.Setter;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
 
 public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
@@ -41,7 +42,8 @@ public class TestkitCypherTimeDeserializer extends StdDeserializer<CypherTime> {
         return new CypherTime(data.hour, data.minute, data.second, data.nanosecond, data.utc_offset_s);
     }
 
-    private static final class CypherTimeData {
+    @Setter
+    public static final class CypherTimeData {
         Integer hour;
         Integer minute;
         Integer second;
