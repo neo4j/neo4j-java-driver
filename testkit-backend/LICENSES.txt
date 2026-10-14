@@ -7,9 +7,11 @@ Apache Software License, Version 2.0
   Jackson-annotations
   Jackson-core
   jackson-databind
+  Jackson-jr: Objects (main)
   Neo4j Bolt Connection (Bolt Provider reference impl)
   Neo4j Bolt Connection (Pooled Source impl)
   Neo4j Bolt Connection (Provider SPI)
+  Neo4j Bolt Connection (Query API reference impl)
   Neo4j Bolt Connection (Routed Source impl)
   Neo4j Bolt Connection Codec
   Netty/Buffer

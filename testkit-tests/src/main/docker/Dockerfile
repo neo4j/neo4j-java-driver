@@ -1,4 +1,4 @@
-FROM python:3.10.0b4-buster
+FROM python:3.14.8-trixie
 
 RUN apt-get update && apt-get install -y \
       apt-transport-https \

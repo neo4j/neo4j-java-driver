@@ -26,7 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherValueDeserializer;
 import neo4j.org.testkit.backend.messages.responses.EncryptedValue;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -157,7 +157,7 @@ public class EncryptToBytes implements TestkitRequest {
         private String keyAlias;
         private String keyId;
 
-        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        @JsonDeserialize(using = TestkitCypherBytesDeserializer.class)
         private byte[] iv;
     }
 }

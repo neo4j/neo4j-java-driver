@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.InMemoryEncapsulatedKeyRecordRepository;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.requests.deserializer.HexByteArrayDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import org.neo4j.driver.encryption.EncapsulatedKeyRecord;
 import org.neo4j.driver.encryption.async.AsyncPropertyEncryption;
@@ -120,7 +120,7 @@ public class ImportEncapsulatedKey implements TestkitRequest {
         private String id;
         private String alias;
 
-        @JsonDeserialize(using = HexByteArrayDeserializer.class)
+        @JsonDeserialize(using = TestkitCypherBytesDeserializer.class)
         private byte[] encapsulation;
 
         private String profileName;

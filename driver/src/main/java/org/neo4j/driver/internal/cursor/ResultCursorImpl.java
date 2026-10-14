@@ -1254,6 +1254,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                 case READY -> {
                     apiCallInProgress = true;
                     summaryFuture = new CompletableFuture<>();
+                    var errorFuture = summaryFuture.handle((ignored, throwable) -> throwable);
                     state = State.STREAMING;
                     updateRecordState(RecordState.NO_RECORD);
                     boltConnection
@@ -1272,7 +1273,7 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                                     summaryFuture.completeExceptionally(error);
                                 }
                             });
-                    yield summaryFuture.handle((ignored, throwable) -> throwable);
+                    yield errorFuture;
                 }
                 case STREAMING -> {
                     apiCallInProgress = true;

@@ -7,7 +7,7 @@
     <parent>
         <artifactId>neo4j-java-driver-parent</artifactId>
         <groupId>org.neo4j.driver</groupId>
-        <version>6.3-SNAPSHOT</version>
+        <version>6.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>testkit-backend</artifactId>
@@ -31,6 +31,11 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver-observation-metrics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver-query-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -87,6 +92,7 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>neo4j.org.testkit.backend.Runner</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                             <finalName>testkit-backend</finalName>
                         </configuration>

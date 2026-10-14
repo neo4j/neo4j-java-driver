@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
-    <version>6.3-SNAPSHOT</version>
+    <version>6.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>neo4j-java-driver-bom</artifactId>
@@ -34,6 +34,11 @@
       </dependency>
       <dependency>
         <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver-query-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-observation-metrics</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -56,13 +61,6 @@
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver-encryption-azure-keyvault</artifactId>
         <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j.bolt</groupId>
-        <artifactId>neo4j-bolt-connection-bom</artifactId>
-        <version>${neo4j-bolt-connection-bom.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
