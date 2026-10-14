@@ -59,7 +59,7 @@ public interface PropertyDecryptionRequest {
             /**
              * Sets the value to decrypt.
              *
-             * @param value the value to decrypt
+             * @param value the value to decrypt, must not be {@literal null} or empty
              * @return the next builder step
              */
             AADStep fromValue(byte[] value);

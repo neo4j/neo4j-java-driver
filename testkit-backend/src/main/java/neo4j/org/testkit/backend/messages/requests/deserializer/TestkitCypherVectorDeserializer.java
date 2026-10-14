@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
 import java.util.Arrays;
+import lombok.Setter;
 import neo4j.org.testkit.backend.messages.VectorType;
 import org.neo4j.driver.internal.InternalFloat32Vector;
 import org.neo4j.driver.internal.InternalFloat64Vector;
@@ -56,7 +57,19 @@ public class TestkitCypherVectorDeserializer extends StdDeserializer<Vector> {
         };
     }
 
-    private static final class CypherVectorData {
+    public static Vector deserialize(CypherVectorData data) {
+        return switch (VectorType.of(data.dtype)) {
+            case BYTE -> new InternalInt8Vector(deserializeToBytes(data.data));
+            case SHORT -> new InternalInt16Vector(deserializeToShorts(data.data));
+            case INT -> new InternalInt32Vector(deserializeToIntegers(data.data));
+            case LONG -> new InternalInt64Vector(deserializeToLongs(data.data));
+            case FLOAT -> new InternalFloat32Vector(deserializeToFloats(data.data));
+            case DOUBLE -> new InternalFloat64Vector(deserializeToDoubles(data.data));
+        };
+    }
+
+    @Setter
+    public static final class CypherVectorData {
         String dtype;
         String data;
     }

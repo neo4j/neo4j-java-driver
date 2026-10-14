@@ -41,8 +41,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AuthTokenUtil;
 import neo4j.org.testkit.backend.CustomDriverError;
-import neo4j.org.testkit.backend.InMemoryEncapsulatedKeyRecordRepository;
 import neo4j.org.testkit.backend.TestkitClock;
+import neo4j.org.testkit.backend.TestkitEncapsulatedKeyRepository;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
@@ -137,7 +137,7 @@ public class NewDriver implements TestkitRequest {
                 .orElse(null);
         try {
             configBuilder.withPropertyEncryptionProfiles(
-                    configurePropertyEncryptionProfiles(data.getPropertyEncryptionProfiles()));
+                    configurePropertyEncryptionProfiles(data.getPropertyEncryptionProfiles(), testkitState));
         } catch (IllegalArgumentException e) {
             throw new CustomDriverError(e);
         }
@@ -160,7 +160,8 @@ public class NewDriver implements TestkitRequest {
         return Driver.builder().data(Driver.DriverBody.builder().id(id).build()).build();
     }
 
-    private PropertyEncryptionProfile[] configurePropertyEncryptionProfiles(Set<EncryptionProfile> profiles) {
+    private PropertyEncryptionProfile[] configurePropertyEncryptionProfiles(
+            Set<EncryptionProfile> profiles, TestkitState testkitState) {
         if (profiles == null) {
             return null;
         }
@@ -187,7 +188,7 @@ public class NewDriver implements TestkitRequest {
                     return EnvelopePropertyEncryptionProfile.builder(
                                     profile.getName(),
                                     encapsulationService,
-                                    new InMemoryEncapsulatedKeyRecordRepository())
+                                    new TestkitEncapsulatedKeyRepository(profile.repositoryId, testkitState))
                             .build();
                 })
                 .toArray(PropertyEncryptionProfile[]::new);
@@ -361,6 +362,8 @@ public class NewDriver implements TestkitRequest {
 
         @JsonDeserialize(using = TestkitCypherBytesDeserializer.class)
         private byte[] kek;
+
+        private String repositoryId;
     }
 
     @RequiredArgsConstructor

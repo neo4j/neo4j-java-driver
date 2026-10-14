@@ -80,7 +80,12 @@ import reactor.core.publisher.Mono;
     @JsonSubTypes.Type(CreateEncapsulatedKey.class),
     @JsonSubTypes.Type(EncryptToBytes.class),
     @JsonSubTypes.Type(Decrypt.class),
-    @JsonSubTypes.Type(ImportEncapsulatedKey.class)
+    @JsonSubTypes.Type(EncapsulatedKeyRepositoryCreateCompleted.class),
+    @JsonSubTypes.Type(EncapsulatedKeyRepositoryErrorCompleted.class),
+    @JsonSubTypes.Type(EncapsulatedKeyRepositoryFindByIdCompleted.class),
+    @JsonSubTypes.Type(EncapsulatedKeyRepositoryFindByAliasCompleted.class),
+    @JsonSubTypes.Type(EncapsulatedKeyRepositorySetAliasCompleted.class),
+    @JsonSubTypes.Type(EncapsulatedKeyRepositoryDeleteCompleted.class)
 })
 public interface TestkitRequest {
     TestkitResponse process(TestkitState testkitState);
