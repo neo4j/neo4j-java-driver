@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.Serial;
 import java.time.LocalDate;
 import java.util.Date;
+import lombok.Setter;
 
 public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
 
@@ -42,7 +43,8 @@ public class TestkitCypherDateDeserializer extends StdDeserializer<LocalDate> {
         return LocalDate.of(data.year, data.month, data.day);
     }
 
-    private static final class CypherDateData {
+    @Setter
+    public static final class CypherDateData {
         Integer year;
         Integer month;
         Integer day;

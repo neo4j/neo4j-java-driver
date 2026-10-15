@@ -20,8 +20,10 @@ import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherBytesDeserializer;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherValueDeserializer;
@@ -45,7 +47,7 @@ public class Decrypt implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption();
         var request = buildPropertyDecryptionRequest(encryption, data);
-        var decrypted = encryption.decrypt(request);
+        var decrypted = supplyWithErrorMapping(() -> encryption.decrypt(request));
         return createResponse(decrypted);
     }
 
@@ -55,7 +57,7 @@ public class Decrypt implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(AsyncPropertyEncryption.class);
         var request = buildPropertyDecryptionRequest(encryption, data);
-        return encryption.decryptAsync(request).thenApply(this::createResponse);
+        return supplyWithErrorMapping(() -> encryption.decryptAsync(request)).thenApply(this::createResponse);
     }
 
     @Override
@@ -64,7 +66,9 @@ public class Decrypt implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(ReactivePropertyEncryption.class);
         var request = buildPropertyDecryptionRequest(encryption, data);
-        return Mono.fromDirect(flowPublisherToFlux(encryption.decrypt(request))).map(this::createResponse);
+        return Mono.fromDirect(flowPublisherToFlux(encryption.decrypt(request)))
+                .onErrorMap(this::mapError)
+                .map(this::createResponse);
     }
 
     @Override
@@ -74,14 +78,20 @@ public class Decrypt implements TestkitRequest {
         var encryption =
                 driver.propertyEncryption(org.neo4j.driver.encryption.reactivestreams.ReactivePropertyEncryption.class);
         var request = buildPropertyDecryptionRequest(encryption, data);
-        return Mono.fromDirect(encryption.decrypt(request)).map(this::createResponse);
+        return Mono.fromDirect(encryption.decrypt(request))
+                .onErrorMap(this::mapError)
+                .map(this::createResponse);
     }
 
     private PropertyDecryptionRequest buildPropertyDecryptionRequest(
             BasePropertyEncryption encryption, DecryptBody data) {
-        var aadStep = PropertyDecryptionRequest.builder().fromValue(data.getValue());
-        var buildStep = data.isUsePersistedAad() ? aadStep.withoutExternalAAD() : aadStep.withAAD(data.getAad());
-        return buildStep.build();
+        try {
+            var aadStep = PropertyDecryptionRequest.builder().fromValue(data.getValue());
+            var buildStep = data.isUsePersistedAad() ? aadStep.withoutExternalAAD() : aadStep.withAAD(data.getAad());
+            return buildStep.build();
+        } catch (Exception e) {
+            throw new CustomDriverError(e);
+        }
     }
 
     private DecryptedValue createResponse(Value decrypted) {
@@ -90,6 +100,18 @@ public class Decrypt implements TestkitRequest {
                         .decryptedValue(decrypted)
                         .build())
                 .build();
+    }
+
+    private <T> T supplyWithErrorMapping(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException e) {
+            throw (RuntimeException) mapError(e);
+        }
+    }
+
+    private Throwable mapError(Throwable error) {
+        return error instanceof IllegalArgumentException ? new CustomDriverError(error) : error;
     }
 
     @Setter

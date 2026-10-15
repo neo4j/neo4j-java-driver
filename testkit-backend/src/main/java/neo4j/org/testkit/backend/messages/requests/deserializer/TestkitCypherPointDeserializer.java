@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import lombok.Setter;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.types.Point;
 
@@ -51,7 +52,8 @@ public class TestkitCypherPointDeserializer extends StdDeserializer<Point> {
                 : Values.point(srid, data.x, data.y, data.z).asPoint();
     }
 
-    private static final class CypherPointData {
+    @Setter
+    public static final class CypherPointData {
         String system;
         Double x;
         Double y;
