@@ -16,7 +16,7 @@
     <description>The Neo4j Java Driver Encryption module providing encryption using Azure Key Vault.</description>
 
     <properties>
-        <azure-sdk-bom.version>1.3.8</azure-sdk-bom.version>
+        <azure-sdk-bom.version>1.3.9</azure-sdk-bom.version>
         <javadoc.failOnWarnings>false</javadoc.failOnWarnings>
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
