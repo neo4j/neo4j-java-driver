@@ -4,7 +4,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  AWS Event Stream
   AWS Java SDK :: Annotations
   AWS Java SDK :: Auth
   AWS Java SDK :: AWS Core
@@ -14,6 +13,7 @@ Apache Software License, Version 2.0
   AWS Java SDK :: Core :: Protocols :: Json Utils
   AWS Java SDK :: Core :: Protocols :: Protocol Core
   AWS Java SDK :: Endpoints SPI
+  AWS Java SDK :: EventStream
   AWS Java SDK :: HTTP Auth
   AWS Java SDK :: HTTP Auth AWS
   AWS Java SDK :: HTTP Auth Event Stream
