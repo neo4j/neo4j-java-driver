@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <enforce.java.version>26</enforce.java.version>
+    <enforce.java.version>27</enforce.java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
@@ -57,14 +57,17 @@
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.23.0</commons-codec.version>
     <bouncycastle-jdk18on.version>1.86</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.6.5</logback-classic.version>
+    <logback-classic.version>1.6.6</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.22.3</jackson.version>
+    <jackson.version>2.22.4</jackson.version>
     <lombok.version>1.18.48</lombok.version>
-    <svm.version>25.0.4.1.1</svm.version>
+    <svm.version>25.0.5.0.2</svm.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
-    <blockhound.version>1.0.17.RELEASE</blockhound.version>
+    <blockhound.version>1.0.18.RELEASE</blockhound.version>
     <testcontainers.version>2.0.5</testcontainers.version>
+    <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
+    <!-- temporary until palantir-java-format is updated to work on Java 27 -->
+    <spotless.check.skip>true</spotless.check.skip>
     <build-resources.version>2026.07.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -452,7 +455,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>${spotless-maven-plugin.version}</version>
           <executions>
             <execution>
               <goals>
