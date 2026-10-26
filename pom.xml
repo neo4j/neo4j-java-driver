@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <enforce.java.version>26</enforce.java.version>
+    <enforce.java.version>27</enforce.java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
