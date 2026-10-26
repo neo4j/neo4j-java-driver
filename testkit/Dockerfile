@@ -1,6 +1,6 @@
 FROM debian:trixie-slim
 
-ENV JAVA_HOME=/usr/lib/jvm/openjdk-26 \
+ENV JAVA_HOME=/usr/lib/jvm/openjdk-27 \
     PYTHON=python3
 
 RUN apt-get update && apt-get install -y \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # https://hub.docker.com/_/eclipse-temurin
-COPY --from=eclipse-temurin:26-jdk /opt/java/openjdk $JAVA_HOME
+COPY --from=eclipse-temurin:27-jdk /opt/java/openjdk $JAVA_HOME
 
 COPY --from=maven:3.9.16-eclipse-temurin-26 /usr/share/maven /opt/apache-maven
 
