@@ -25,11 +25,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.Map;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherDateTime;
+import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherTime;
 import neo4j.org.testkit.backend.messages.requests.deserializer.types.CypherType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.InternalIsoDuration;
+import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
+import org.neo4j.driver.types.Vector;
 
 public class TestkitCypherValueDeserializer extends StdDeserializer<Value> {
     @Serial
@@ -74,6 +81,8 @@ public class TestkitCypherValueDeserializer extends StdDeserializer<Value> {
 
             var map = ctxt.readTreeAsValue(valueNode, Map.class);
             return Values.value(map);
+        } else if ("CypherNull".equals(paramType)) {
+            return Values.NULL;
         }
 
         var javaType = cypherTypeToJavaType(paramType);
@@ -83,6 +92,45 @@ public class TestkitCypherValueDeserializer extends StdDeserializer<Value> {
 
         var valueNode = data.get("value");
         if (valueNode == null) {
+            if (javaType == IsoDuration.class) {
+                var durationData =
+                        ctxt.readTreeAsValue(data, TestkitCypherDurationDeserializer.CypherDurationData.class);
+                return Values.value(new InternalIsoDuration(
+                        durationData.months, durationData.days, durationData.seconds, durationData.nanoseconds));
+            } else if (javaType == CypherDateTime.class) {
+                var dateTimeData =
+                        ctxt.readTreeAsValue(data, TestkitCypherDateTimeDeserializer.CypherDateTimeData.class);
+                return new CypherDateTime(
+                                dateTimeData.year,
+                                dateTimeData.month,
+                                dateTimeData.day,
+                                dateTimeData.hour,
+                                dateTimeData.minute,
+                                dateTimeData.second,
+                                dateTimeData.nanosecond,
+                                dateTimeData.timezone_id,
+                                dateTimeData.utc_offset_s)
+                        .asValue();
+            } else if (javaType == Vector.class) {
+                var vectorData = ctxt.readTreeAsValue(data, TestkitCypherVectorDeserializer.CypherVectorData.class);
+                return Values.value(TestkitCypherVectorDeserializer.deserialize(vectorData));
+            } else if (javaType == CypherTime.class) {
+                var timeData = ctxt.readTreeAsValue(data, TestkitCypherTimeDeserializer.CypherTimeData.class);
+                return new CypherTime(
+                                timeData.hour,
+                                timeData.minute,
+                                timeData.second,
+                                timeData.nanosecond,
+                                timeData.utc_offset_s)
+                        .asValue();
+            } else if (javaType == LocalDate.class) {
+                var dateData = ctxt.readTreeAsValue(data, TestkitCypherDateDeserializer.CypherDateData.class);
+                return Values.value(LocalDate.of(dateData.year, dateData.month, dateData.day));
+            } else if (javaType == Point.class) {
+                var pointData = ctxt.readTreeAsValue(data, TestkitCypherPointDeserializer.CypherPointData.class);
+                return Values.value(TestkitCypherPointDeserializer.deserialize(pointData));
+            }
+
             ctxt.reportInputMismatch(this, "Missing 'value' inside 'data'");
         }
 

@@ -34,7 +34,11 @@ public final class InternalPropertyDecryptionRequest extends AbstractPropertyReq
 
     @Override
     public Builder.AADStep fromValue(byte[] value) {
-        this.value = Objects.requireNonNull(value);
+        Objects.requireNonNull(value);
+        if (value.length == 0) {
+            throw new IllegalArgumentException("bytes must not be empty");
+        }
+        this.value = value;
         return this;
     }
 

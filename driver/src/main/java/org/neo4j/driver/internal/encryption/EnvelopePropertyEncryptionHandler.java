@@ -61,7 +61,8 @@ public class EnvelopePropertyEncryptionHandler implements PropertyEncryptionHand
         Objects.requireNonNull(profile);
         Objects.requireNonNull(clock);
         this.profileName = Objects.requireNonNull(profile.name());
-        this.keyEncapsulationService = Objects.requireNonNull(profile.asyncKeyEncapsulationService());
+        this.keyEncapsulationService = new ValidatingAsyncKeyEncapsulationService(
+                Objects.requireNonNull(profile.asyncKeyEncapsulationService()));
         this.keyRepository = Objects.requireNonNull(profile.asyncKeyRepository());
         this.provider = profile.cryptoContext().map(CryptoContext::provider).orElse(null);
         this.secureRandomIV =

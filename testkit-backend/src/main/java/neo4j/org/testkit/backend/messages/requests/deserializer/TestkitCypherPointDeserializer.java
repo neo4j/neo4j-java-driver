@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.io.Serial;
+import lombok.Setter;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.types.Point;
 
@@ -39,6 +40,10 @@ public class TestkitCypherPointDeserializer extends StdDeserializer<Point> {
     @Override
     public Point deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         var data = mapper.mapData(p, ctxt, new CypherPointData());
+        return deserialize(data);
+    }
+
+    public static Point deserialize(CypherPointData data) {
         var srid =
                 switch (data.system) {
                     case "cartesian" -> data.z == null ? 7203 : 9157;
@@ -51,7 +56,8 @@ public class TestkitCypherPointDeserializer extends StdDeserializer<Point> {
                 : Values.point(srid, data.x, data.y, data.z).asPoint();
     }
 
-    private static final class CypherPointData {
+    @Setter
+    public static final class CypherPointData {
         String system;
         Double x;
         Double y;

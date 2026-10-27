@@ -70,7 +70,7 @@ public class EncryptToBytes implements TestkitRequest {
         var driver = testkitState.getDriverHolder(data.getDriverId()).driver();
         var encryption = driver.propertyEncryption(ReactivePropertyEncryption.class);
         var request = buildPropertyEncryptionRequest(encryption, data);
-        return Mono.fromDirect(flowPublisherToFlux(supplyWithErrorMapping(() -> encryption.encryptToBytes(request))))
+        return Mono.fromDirect(flowPublisherToFlux(encryption.encryptToBytes(request)))
                 .onErrorMap(this::mapError)
                 .map(this::createResponse);
     }
@@ -97,7 +97,12 @@ public class EncryptToBytes implements TestkitRequest {
         } catch (IllegalArgumentException e) {
             throw new CustomDriverError(e);
         }
-        var profileStep = data.getAad() != null ? aadStep.withAAD(data.getAad()) : aadStep;
+        PropertyEncryptionRequest.Builder.ProfileStep profileStep;
+        try {
+            profileStep = data.getAad() != null ? aadStep.withAAD(data.getAad()) : aadStep;
+        } catch (Exception e) {
+            throw new CustomDriverError(e);
+        }
         var buildStep = data.getProfileName() != null ? profileStep.usingProfile(data.getProfileName()) : profileStep;
         if (data.getKeyAlias() != null) {
             request = buildStep.usingKeyAlias(data.getKeyAlias()).build();
