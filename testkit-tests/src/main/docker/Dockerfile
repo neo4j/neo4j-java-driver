@@ -1,4 +1,4 @@
-FROM python:3.14.8-trixie
+FROM python:3.15-slim-trixie
 
 RUN apt-get update && apt-get install -y \
       apt-transport-https \
