@@ -282,12 +282,15 @@ public class DatabaseExtension implements ExecutionCondition, BeforeEachCallback
         }
     }
 
+    public static String neo4jImage() {
+        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2026");
+        return String.format("neo4j:%s-enterprise", neo4JVersion);
+    }
+
     @SuppressWarnings("resource")
     private static Neo4jContainer setupNeo4jContainer(File cert, File key, Map<String, String> config) {
-        var neo4JVersion = Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("2025");
-
         var extendedNeo4jImage = new ImageFromDockerfile()
-                .withDockerfileFromBuilder(builder -> builder.from(String.format("neo4j:%s-enterprise", neo4JVersion))
+                .withDockerfileFromBuilder(builder -> builder.from(neo4jImage())
                         .run("mkdir /var/lib/neo4j/certificates/bolt")
                         .copy("public.crt", "/var/lib/neo4j/certificates/bolt/")
                         .copy("private.key", "/var/lib/neo4j/certificates/bolt/")

@@ -18,12 +18,15 @@ package org.neo4j.driver.tck.reactive;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.testutil.DatabaseExtension;
 import org.testcontainers.neo4j.Neo4jContainer;
 import org.testng.SkipException;
 
 public class Neo4jManager {
     @SuppressWarnings("resource")
-    private final Neo4jContainer NEO4J = new Neo4jContainer("neo4j:4.4").withAdminPassword(null);
+    private final Neo4jContainer NEO4J = new Neo4jContainer(DatabaseExtension.neo4jImage())
+            .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
+            .withAdminPassword(null);
 
     public void start() {
         NEO4J.start();
