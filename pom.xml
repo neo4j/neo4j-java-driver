@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <enforce.java.version>26</enforce.java.version>
+    <enforce.java.version>27</enforce.java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.xlint.extras/>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
@@ -34,19 +34,19 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
-    <neo4j-bolt-connection-bom.version>12.0.0</neo4j-bolt-connection-bom.version>
+    <neo4j-bolt-connection-bom.version>12.2.2</neo4j-bolt-connection-bom.version>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.17.Final</netty-bom.version>
+    <netty-bom.version>4.2.20.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2023.0.19</reactor-bom.version>
     <slf4j-api.version>1.7.36</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.23.0</mockito-core.version>
+    <mockito-core.version>5.24.0</mockito-core.version>
     <junit.version>5.14.4</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
@@ -54,15 +54,18 @@
     <!-- supply a newer version than the one supplied by the jarchivelib 1.2.0 -->
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
-    <commons-codec.version>1.22.1</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.85</bouncycastle-jdk18on.version>
+    <commons-codec.version>1.23.0</commons-codec.version>
+    <bouncycastle-jdk18on.version>1.86</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.22.1</jackson.version>
-    <lombok.version>1.18.46</lombok.version>
+    <jackson.version>2.22.4</jackson.version>
+    <lombok.version>1.18.48</lombok.version>
     <svm.version>24.2.2</svm.version>
-    <micrometer.version>1.17.0</micrometer.version>
-    <blockhound.version>1.0.17.RELEASE</blockhound.version>
+    <micrometer.version>1.17.2</micrometer.version>
+    <blockhound.version>1.0.18.RELEASE</blockhound.version>
     <testcontainers.version>1.21.4</testcontainers.version>
+    <spotless-maven-plugin.version>3.11.0</spotless-maven-plugin.version>
+    <!-- temporary until palantir-java-format is updated to work on Java 27 -->
+    <spotless.check.skip>true</spotless.check.skip>
     <build-resources.version>2026.07.1</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -454,7 +457,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>${spotless-maven-plugin.version}</version>
           <executions>
             <execution>
               <goals>
