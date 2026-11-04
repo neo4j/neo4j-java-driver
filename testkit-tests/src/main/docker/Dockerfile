@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
       ca-certificates \
       curl \
       gnupg \
+      git \
       lsb-release
 
 RUN mkdir -p /etc/apt/keyrings \
