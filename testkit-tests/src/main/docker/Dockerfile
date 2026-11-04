@@ -1,10 +1,11 @@
-FROM python:3.10.0b4-buster
+FROM python:3.15-slim-trixie
 
 RUN apt-get update && apt-get install -y \
       apt-transport-https \
       ca-certificates \
       curl \
       gnupg \
+      git \
       lsb-release
 
 RUN mkdir -p /etc/apt/keyrings \
