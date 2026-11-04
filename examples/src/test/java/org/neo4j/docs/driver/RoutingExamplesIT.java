@@ -23,6 +23,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.testutil.DatabaseExtension;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -38,13 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Testcontainers(disabledWithoutDocker = true)
 @DisabledIfSystemProperty(named = "skipDockerTests", matches = "^true$")
 class RoutingExamplesIT {
-    private static final String NEO4J_VERSION =
-            Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
-
     @Container
     @SuppressWarnings("resource")
     private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(
-                    String.format("neo4j:%s-enterprise", NEO4J_VERSION))
+            DatabaseExtension.neo4jImage())
             .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
             // in this testing deployment the server runs inside a container and its Bolt port is exposed to the test(s)
             // on a random port that might not match the port in the routing table
