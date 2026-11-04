@@ -15,7 +15,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <enforce.java.version>26</enforce.java.version>
+    <enforce.java.version>27</enforce.java.version>
     <maven.compiler.release>8</maven.compiler.release>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
 
@@ -34,7 +34,7 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.1.137.Final</netty-bom.version>
+    <netty-bom.version>4.1.140.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
@@ -46,13 +46,16 @@
     <junit.version>5.14.4</junit.version>
     <testng-engine.version>1.1.0</testng-engine.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
-    <bouncycastle-jdk18on.version>1.85</bouncycastle-jdk18on.version>
+    <bouncycastle-jdk18on.version>1.86</bouncycastle-jdk18on.version>
     <logback-classic.version>1.2.13</logback-classic.version>
-    <jackson.version>2.22.1</jackson.version>
-    <lombok.version>1.18.46</lombok.version>
-    <svm.version>21.3.19</svm.version>
-    <micrometer.version>1.17.0</micrometer.version>
+    <jackson.version>2.22.4</jackson.version>
+    <lombok.version>1.18.48</lombok.version>
+    <svm.version>21.3.20.0.3</svm.version>
+    <micrometer.version>1.17.2</micrometer.version>
     <testcontainers.version>1.21.4</testcontainers.version>
+    <spotless-maven-plugin.version>3.11.0</spotless-maven-plugin.version>
+    <!-- temporary until palantir-java-format is updated to work on Java 27 -->
+    <spotless.check.skip>true</spotless.check.skip>
     <build-resources.version>4.4.48</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -368,7 +371,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>${spotless-maven-plugin.version}</version>
           <executions>
             <execution>
               <goals>
