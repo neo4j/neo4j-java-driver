@@ -21,22 +21,18 @@ package org.neo4j.docs.driver;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.util.DatabaseExtension;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)
 class RoutingExamplesIT {
-    private static final String NEO4J_VERSION =
-            Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
-
     @Container
-    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(
-                    String.format("neo4j:%s-enterprise", NEO4J_VERSION))
+    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>(DatabaseExtension.neo4jImage())
             .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
             .withAdminPassword(null);
 
