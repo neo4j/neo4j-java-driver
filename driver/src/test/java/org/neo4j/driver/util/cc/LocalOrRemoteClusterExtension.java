@@ -29,6 +29,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.TestUtil;
 import org.testcontainers.containers.Neo4jContainer;
 
@@ -60,9 +61,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             clusterUri = remoteClusterUriFromSystemProperty();
             cleanDb();
         } else {
-            String neo4JVersion =
-                    Optional.ofNullable(System.getenv("NEO4J_VERSION")).orElse("4.4");
-            neo4jContainer = new Neo4jContainer<>(String.format("neo4j:%s-enterprise", neo4JVersion))
+            neo4jContainer = new Neo4jContainer<>(DatabaseExtension.neo4jImage())
                     .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes");
             neo4jContainer.start();
 
