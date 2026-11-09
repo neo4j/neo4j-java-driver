@@ -22,4 +22,6 @@ interface Cache<T> {
     void put(String key, T value, long now);
 
     void delete(String key);
+
+    void deleteByValue(T value);
 }
