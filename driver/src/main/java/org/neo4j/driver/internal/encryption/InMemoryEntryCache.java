@@ -78,6 +78,12 @@ final class InMemoryEntryCache<T> implements Cache<T> {
         keyToEntry.remove(key);
     }
 
+    @Override
+    public void deleteByValue(T value) {
+        Objects.requireNonNull(value);
+        keyToEntry.entrySet().removeIf(entry -> value.equals(entry.getValue().value()));
+    }
+
     private String prune(long now) {
         String leastRecentlyUsedKey = null;
         var leastRecentlyUsedKeyAccessedAt = Long.MAX_VALUE;

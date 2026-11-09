@@ -27,4 +27,7 @@ final class NoopCache<T> implements Cache<T> {
 
     @Override
     public void delete(String key) {}
+
+    @Override
+    public void deleteByValue(T value) {}
 }

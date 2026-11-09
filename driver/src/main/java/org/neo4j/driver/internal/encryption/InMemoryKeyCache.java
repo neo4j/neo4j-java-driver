@@ -87,7 +87,7 @@ final class InMemoryKeyCache implements KeyCache {
         if (newAlias != null) {
             aliasIndex.put(newAlias, id, now);
         } else {
-            aliasIndex.delete(id);
+            aliasIndex.deleteByValue(id);
         }
     }
 
