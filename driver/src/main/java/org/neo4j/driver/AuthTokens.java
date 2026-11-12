@@ -83,11 +83,28 @@ public final class AuthTokens {
      * @see GraphDatabase#driver(String, AuthToken)
      */
     public static AuthToken bearer(String token) {
+        return bearer(token, null);
+    }
+
+    /**
+     * The bearer authentication scheme, using a base64 encoded token.
+     *
+     * @param token base64 encoded token
+     * @param realm this is the "realm", specifies the authentication provider, may be {@literal null}
+     * @return an authentication token that can be used to connect to Neo4j
+     * @throws NullPointerException when token is {@code null}
+     * @see GraphDatabase#driver(String, AuthToken)
+     * @since 6.4.0
+     */
+    public static AuthToken bearer(String token, String realm) {
         Objects.requireNonNull(token, "Token can't be null");
 
-        Map<String, Value> map = newHashMapWithSize(2);
+        Map<String, Value> map = newHashMapWithSize(3);
         map.put(SCHEME_KEY, value("bearer"));
         map.put(CREDENTIALS_KEY, value(token));
+        if (realm != null) {
+            map.put(REALM_KEY, value(realm));
+        }
         return new InternalAuthToken(map);
     }
 
