@@ -106,6 +106,23 @@ class AuthTokensTest {
     }
 
     @Test
+    void shouldSupportBearerAuthWithRealm() {
+        // GIVEN
+        var tokenStr = "token";
+        var realm = "realm";
+
+        // WHEN
+        var token = (InternalAuthToken) AuthTokens.bearer(tokenStr, realm);
+
+        // THEN
+        var map = token.toMap();
+        assertThat(map.size(), equalTo(3));
+        assertThat(map.get("scheme"), equalTo(new StringValue("bearer")));
+        assertThat(map.get("credentials"), equalTo(new StringValue(tokenStr)));
+        assertThat(map.get("realm"), equalTo(new StringValue(realm)));
+    }
+
+    @Test
     void basicKerberosAuthWithRealm() {
         var token = (InternalAuthToken) AuthTokens.kerberos("base64");
         var map = token.toMap();
