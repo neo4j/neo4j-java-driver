@@ -10,7 +10,7 @@ import sys
 
 if __name__ == "__main__":
     subprocess.check_call(
-        ["java", "-Djava.security.properties=/testkit.java.security", "-jar", "testkit-backend/target/testkit-backend.jar",
+        ["java", "-Djava.security.properties=/testkit.java.security", "-Dio.netty.leakDetection.level=paranoid", "-jar", "testkit-backend/target/testkit-backend.jar",
         os.getenv('TEST_BACKEND_SERVER', '')],
         stdout=sys.stdout, stderr=sys.stderr
     )
