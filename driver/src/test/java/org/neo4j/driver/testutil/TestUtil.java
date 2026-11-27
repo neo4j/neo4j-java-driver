@@ -248,10 +248,12 @@ public final class TestUtil {
                                                 != messageHandler.messageTypes().size()) {
                                     return false;
                                 }
-                                return IntStream.range(0, messages.size()).allMatch(i -> messageHandler
-                                        .messageTypes()
-                                        .get(i)
-                                        .isAssignableFrom(messages.get(i).getClass()));
+                                return IntStream.range(0, messages.size())
+                                        .allMatch(i -> messageHandler
+                                                .messageTypes()
+                                                .get(i)
+                                                .isAssignableFrom(
+                                                        messages.get(i).getClass()));
                             }),
                             any()))
                     .willAnswer((Answer<CompletionStage<Void>>) invocation -> {

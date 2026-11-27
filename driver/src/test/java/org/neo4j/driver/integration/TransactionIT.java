@@ -303,9 +303,10 @@ class TransactionIT {
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
             try {
-                var e = assertThrows(ServiceUnavailableException.class, () -> tx2.run(
-                                "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
-                        .consume());
+                var e = assertThrows(
+                        ServiceUnavailableException.class,
+                        () -> tx2.run("MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
+                                .consume());
                 assertThat(e.getMessage(), containsString("Connection to the database terminated"));
                 assertThat(e.getMessage(), containsString("Thread interrupted while running query in transaction"));
             } finally {
@@ -535,8 +536,9 @@ class TransactionIT {
         tx.terminate();
 
         // Then
-        assertThrows(TransactionTerminatedException.class, () -> LongStream.range(0, streamSize)
-                .forEach(ignored -> assertNotNull(result.next())));
+        assertThrows(
+                TransactionTerminatedException.class,
+                () -> LongStream.range(0, streamSize).forEach(ignored -> assertNotNull(result.next())));
         tx.close();
     }
 

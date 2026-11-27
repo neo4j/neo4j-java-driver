@@ -71,9 +71,11 @@ final class AzureKeyEncapsulationService implements AsyncKeyEncapsulationService
     }
 
     private CryptographyAsyncClient clientFor(String keyId) {
-        return clientCache.get(keyId, id -> new CryptographyClientBuilder()
-                .credential(credential)
-                .keyIdentifier(id)
-                .buildAsyncClient());
+        return clientCache.get(
+                keyId,
+                id -> new CryptographyClientBuilder()
+                        .credential(credential)
+                        .keyIdentifier(id)
+                        .buildAsyncClient());
     }
 }

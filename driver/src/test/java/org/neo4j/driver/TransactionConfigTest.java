@@ -46,8 +46,9 @@ class TransactionConfigTest {
 
     @Test
     void shouldDisallowNegativeTimeout() {
-        assertThrows(IllegalArgumentException.class, () -> TransactionConfig.builder()
-                .withTimeout(Duration.ofSeconds(-1)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TransactionConfig.builder().withTimeout(Duration.ofSeconds(-1)));
     }
 
     @Test
@@ -58,14 +59,19 @@ class TransactionConfigTest {
 
     @Test
     void shouldDisallowMetadataWithIllegalValues() {
-        assertThrows(ClientException.class, () -> TransactionConfig.builder()
-                .withMetadata(singletonMap("key", new InternalNode(1))));
+        assertThrows(
+                ClientException.class,
+                () -> TransactionConfig.builder().withMetadata(singletonMap("key", new InternalNode(1))));
 
-        assertThrows(ClientException.class, () -> TransactionConfig.builder()
-                .withMetadata(singletonMap("key", new InternalRelationship(1, 1, 1, ""))));
+        assertThrows(
+                ClientException.class,
+                () -> TransactionConfig.builder()
+                        .withMetadata(singletonMap("key", new InternalRelationship(1, 1, 1, ""))));
 
-        assertThrows(ClientException.class, () -> TransactionConfig.builder()
-                .withMetadata(singletonMap("key", new InternalPath(new InternalNode(1)))));
+        assertThrows(
+                ClientException.class,
+                () -> TransactionConfig.builder()
+                        .withMetadata(singletonMap("key", new InternalPath(new InternalNode(1)))));
     }
 
     @Test

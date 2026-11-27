@@ -44,12 +44,11 @@ public class TestkitCypherPointDeserializer extends StdDeserializer<Point> {
     }
 
     public static Point deserialize(CypherPointData data) {
-        var srid =
-                switch (data.system) {
-                    case "cartesian" -> data.z == null ? 7203 : 9157;
-                    case "wgs84" -> data.z == null ? 4326 : 4979;
-                    default -> throw new IllegalArgumentException("Unknown coordinate system: " + data.system);
-                };
+        var srid = switch (data.system) {
+            case "cartesian" -> data.z == null ? 7203 : 9157;
+            case "wgs84" -> data.z == null ? 4326 : 4979;
+            default -> throw new IllegalArgumentException("Unknown coordinate system: " + data.system);
+        };
 
         return data.z == null
                 ? Values.point(srid, data.x, data.y).asPoint()

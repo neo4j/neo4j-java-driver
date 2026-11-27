@@ -56,13 +56,12 @@ public class TestkitCypherTypeMapper {
                 var field = p.currentName();
                 var value = p.getValueAsString();
                 if (fieldIsType(data, field, Double.class)) {
-                    var number =
-                            switch (value) {
-                                case "-Infinity" -> Double.NEGATIVE_INFINITY;
-                                case "+Infinity" -> Double.POSITIVE_INFINITY;
-                                case "NaN" -> Double.NaN;
-                                default -> throw new RuntimeException("Unknown value: " + value);
-                            };
+                    var number = switch (value) {
+                        case "-Infinity" -> Double.NEGATIVE_INFINITY;
+                        case "+Infinity" -> Double.POSITIVE_INFINITY;
+                        case "NaN" -> Double.NaN;
+                        default -> throw new RuntimeException("Unknown value: " + value);
+                    };
                     setField(data, field, number);
                 } else {
                     setField(data, field, value);

@@ -158,74 +158,72 @@ public class ResultCursorImpl extends AbstractRecordStateResponseHandler
                     GqlStatusError.DIAGNOSTIC_RECORD,
                     null));
         }
-        CompletionStage<ResultSummary> summaryFt =
-                switch (state) {
-                    case READY -> {
-                        Observation consumeObservation;
-                        Observation boltObservation;
-                        if (parentObservation != null) {
-                            consumeObservation = NoopObservation.getInstance();
-                            boltObservation = parentObservation;
-                        } else {
-                            consumeObservation = observationProvider
-                                    .resultConsume(resultType)
-                                    .start();
-                            boltObservation = consumeObservation;
-                        }
-                        apiCallInProgress = true;
-                        summaryFuture = new CompletableFuture<>();
-                        var future = summaryFuture;
-                        state = State.DISCARDING;
-                        boltConnection
-                                .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), boltObservation)
-                                .whenComplete((ignored, throwable) -> {
-                                    var error = Futures.completionExceptionCause(throwable);
-                                    CompletableFuture<ResultSummary> summaryFuture;
-                                    if (error != null) {
-                                        synchronized (this) {
-                                            state = State.FAILED;
-                                            errorExposed = true;
-                                            summaryFuture = this.summaryFuture;
-                                            this.summaryFuture = null;
-                                            apiCallInProgress = false;
-                                        }
-                                        summaryFuture.completeExceptionally(error);
-                                    }
-                                });
-                        yield observeAsyncStarted(consumeObservation, () -> future);
-                    }
-                    case STREAMING -> {
-                        if (parentObservation != null) {
-                            pendingObservation = parentObservation;
-                            observeBoltOnly = true;
-                        } else {
-                            pendingObservation = observationProvider.resultConsume(resultType);
-                            observeBoltOnly = false;
-                        }
-                        apiCallInProgress = true;
-                        summaryFuture = new CompletableFuture<>();
-                        yield summaryFuture;
-                    }
-                    case DISCARDING -> {
-                        var message = "Invalid API call.";
-                        yield CompletableFuture.failedStage(new ClientException(
-                                GqlStatusError.UNKNOWN.getStatus(),
-                                GqlStatusError.UNKNOWN.getStatusDescription(message),
-                                "N/A",
-                                message,
-                                GqlStatusError.DIAGNOSTIC_RECORD,
-                                null));
-                    }
-                    case FAILED ->
-                        stageExposingError(METADATA_EXTRACTOR.extractSummary(
-                                query,
-                                boltConnection,
-                                runSummary.resultAvailableAfter(),
-                                Collections.emptyMap(),
-                                legacyNotifications,
-                                null));
-                    case SUCCEEDED -> CompletableFuture.completedStage(summary);
-                };
+        CompletionStage<ResultSummary> summaryFt = switch (state) {
+            case READY -> {
+                Observation consumeObservation;
+                Observation boltObservation;
+                if (parentObservation != null) {
+                    consumeObservation = NoopObservation.getInstance();
+                    boltObservation = parentObservation;
+                } else {
+                    consumeObservation =
+                            observationProvider.resultConsume(resultType).start();
+                    boltObservation = consumeObservation;
+                }
+                apiCallInProgress = true;
+                summaryFuture = new CompletableFuture<>();
+                var future = summaryFuture;
+                state = State.DISCARDING;
+                boltConnection
+                        .writeAndFlush(this, Messages.discard(runSummary.queryId(), -1), boltObservation)
+                        .whenComplete((ignored, throwable) -> {
+                            var error = Futures.completionExceptionCause(throwable);
+                            CompletableFuture<ResultSummary> summaryFuture;
+                            if (error != null) {
+                                synchronized (this) {
+                                    state = State.FAILED;
+                                    errorExposed = true;
+                                    summaryFuture = this.summaryFuture;
+                                    this.summaryFuture = null;
+                                    apiCallInProgress = false;
+                                }
+                                summaryFuture.completeExceptionally(error);
+                            }
+                        });
+                yield observeAsyncStarted(consumeObservation, () -> future);
+            }
+            case STREAMING -> {
+                if (parentObservation != null) {
+                    pendingObservation = parentObservation;
+                    observeBoltOnly = true;
+                } else {
+                    pendingObservation = observationProvider.resultConsume(resultType);
+                    observeBoltOnly = false;
+                }
+                apiCallInProgress = true;
+                summaryFuture = new CompletableFuture<>();
+                yield summaryFuture;
+            }
+            case DISCARDING -> {
+                var message = "Invalid API call.";
+                yield CompletableFuture.failedStage(new ClientException(
+                        GqlStatusError.UNKNOWN.getStatus(),
+                        GqlStatusError.UNKNOWN.getStatusDescription(message),
+                        "N/A",
+                        message,
+                        GqlStatusError.DIAGNOSTIC_RECORD,
+                        null));
+            }
+            case FAILED ->
+                stageExposingError(METADATA_EXTRACTOR.extractSummary(
+                        query,
+                        boltConnection,
+                        runSummary.resultAvailableAfter(),
+                        Collections.emptyMap(),
+                        legacyNotifications,
+                        null));
+            case SUCCEEDED -> CompletableFuture.completedStage(summary);
+        };
         var future = new CompletableFuture<ResultSummary>();
         summaryFt.whenComplete((summary, throwable) -> {
             throwable = Futures.completionExceptionCause(throwable);

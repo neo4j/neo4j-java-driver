@@ -39,12 +39,11 @@ public class TestkitPointSerializer extends StdSerializer<PointValue> {
             var point = value.asPoint();
             var srid = point.srid();
 
-            var system =
-                    switch (srid) {
-                        case 7203, 9157 -> "cartesian";
-                        case 4326, 4979 -> "wgs84";
-                        default -> throw new IllegalArgumentException("Unknown coordinate system: " + srid);
-                    };
+            var system = switch (srid) {
+                case 7203, 9157 -> "cartesian";
+                case 4326, 4979 -> "wgs84";
+                default -> throw new IllegalArgumentException("Unknown coordinate system: " + srid);
+            };
 
             GenUtils.writePoint(gen, system, point.x(), point.y(), point.z());
         });

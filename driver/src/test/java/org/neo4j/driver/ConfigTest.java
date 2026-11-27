@@ -624,8 +624,10 @@ class ConfigTest {
                         .build());
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> Config.builder()
-                .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Config.builder()
+                        .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
     }
 
     @Test
@@ -640,7 +642,9 @@ class ConfigTest {
         profiles.add(null);
 
         // When & Then
-        assertThrows(NullPointerException.class, () -> Config.builder()
-                .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
+        assertThrows(
+                NullPointerException.class,
+                () -> Config.builder()
+                        .withPropertyEncryptionProfiles(profiles.toArray(PropertyEncryptionProfile[]::new)));
     }
 }

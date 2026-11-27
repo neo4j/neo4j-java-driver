@@ -52,9 +52,12 @@ final class AdaptingDriverBoltConnection implements DriverBoltConnection {
     @Override
     public CompletionStage<Void> writeAndFlush(
             DriverResponseHandler handler, List<Message> messages, Observation parentObservation) {
-        var handleObservation = ObservationUtil.scoped(observationProvider, parentObservation, () -> observationProvider
-                .boltHandle(appendAndClearMessages(messages))
-                .start());
+        var handleObservation = ObservationUtil.scoped(
+                observationProvider,
+                parentObservation,
+                () -> observationProvider
+                        .boltHandle(appendAndClearMessages(messages))
+                        .start());
         return connection
                 .writeAndFlush(
                         new AdaptingDriverResponseHandler(handler, errorMapper, boltValueFactory, handleObservation),

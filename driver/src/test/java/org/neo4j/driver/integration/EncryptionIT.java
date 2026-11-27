@@ -111,9 +111,10 @@ class EncryptionIT {
         var config = newConfig(driverEncrypted);
 
         @SuppressWarnings("resource")
-        var e = assertThrows(ServiceUnavailableException.class, () -> GraphDatabase.driver(
-                        neo4j.uri(), neo4j.authTokenManager(), config)
-                .verifyConnectivity());
+        var e = assertThrows(
+                ServiceUnavailableException.class,
+                () -> GraphDatabase.driver(neo4j.uri(), neo4j.authTokenManager(), config)
+                        .verifyConnectivity());
 
         assertThat(e.getMessage(), startsWith(errorMessage));
     }

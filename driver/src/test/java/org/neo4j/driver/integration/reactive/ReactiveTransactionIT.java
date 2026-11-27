@@ -94,8 +94,9 @@ class ReactiveTransactionIT {
         assertNotNull(result0);
         assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
-            var exception = assertThrows(ClientException.class, () -> Mono.fromDirect(result.consume())
-                    .block());
+            var exception = assertThrows(
+                    ClientException.class,
+                    () -> Mono.fromDirect(result.consume()).block());
             assertEquals(terminationException, exception.getCause());
         }
         Mono.fromDirect(tx.close()).block();
@@ -113,8 +114,9 @@ class ReactiveTransactionIT {
         assertEquals(terminationException.code(), "Neo.ClientError.Statement.SyntaxError");
 
         // When
-        var exception = assertThrows(TransactionTerminatedException.class, () -> Mono.fromDirect(tx.run("RETURN 1"))
-                .block());
+        var exception = assertThrows(
+                TransactionTerminatedException.class,
+                () -> Mono.fromDirect(tx.run("RETURN 1")).block());
 
         // Then
         assertEquals(terminationException, exception.getCause());
@@ -142,8 +144,9 @@ class ReactiveTransactionIT {
         assertNotNull(result0);
         assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
-            assertThrows(TransactionTerminatedException.class, () -> Flux.from(result.records())
-                    .blockFirst());
+            assertThrows(
+                    TransactionTerminatedException.class,
+                    () -> Flux.from(result.records()).blockFirst());
         }
         Mono.fromDirect(tx.close()).block();
     }
@@ -169,8 +172,9 @@ class ReactiveTransactionIT {
         assertNotNull(result0);
         assertNotNull(result1);
         for (var result : List.of(result0, result1)) {
-            assertThrows(TransactionTerminatedException.class, () -> Mono.fromDirect(result.consume())
-                    .block());
+            assertThrows(
+                    TransactionTerminatedException.class,
+                    () -> Mono.fromDirect(result.consume()).block());
         }
         Mono.fromDirect(tx.close()).block();
     }
@@ -192,7 +196,8 @@ class ReactiveTransactionIT {
 
         // Then
         assertThrows(
-                TransactionTerminatedException.class, () -> Mono.fromDirect(tx.run("UNWIND range(0, 5) AS x RETURN x"))
+                TransactionTerminatedException.class,
+                () -> Mono.fromDirect(tx.run("UNWIND range(0, 5) AS x RETURN x"))
                         .block());
         Mono.fromDirect(tx.close()).block();
     }
@@ -214,8 +219,9 @@ class ReactiveTransactionIT {
 
         // Then
         assertNotNull(result);
-        assertThrows(TransactionTerminatedException.class, () -> Flux.from(result.records())
-                .blockLast());
+        assertThrows(
+                TransactionTerminatedException.class,
+                () -> Flux.from(result.records()).blockLast());
         Mono.fromDirect(tx.close()).block();
     }
 

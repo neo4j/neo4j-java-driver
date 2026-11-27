@@ -158,8 +158,10 @@ class ResultStreamIT {
     void shouldConvertImmediatelyFailingResultToStream() {
         List<Integer> seen = new ArrayList<>();
 
-        var e = assertThrows(ClientException.class, () -> session.run("RETURN 10 / 0").stream()
-                .forEach(record -> seen.add(record.get(0).asInt())));
+        var e = assertThrows(
+                ClientException.class,
+                () -> session.run("RETURN 10 / 0").stream()
+                        .forEach(record -> seen.add(record.get(0).asInt())));
 
         assertThat(e.getMessage(), containsString("/ by zero"));
 

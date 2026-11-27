@@ -198,8 +198,8 @@ class ResultCursorImplTest {
     void shouldFetchMore() {
         cursor.onPullSummary(new PullSummaryImpl(true, Collections.emptyMap()));
         given(connection.serverAddress()).willReturn(BoltServerAddress.LOCAL_DEFAULT);
-        given(connection.writeAndFlush(any(), any(Message.class), any()))
-                .willAnswer((Answer<CompletionStage<Void>>) invocation -> {
+        given(connection.writeAndFlush(any(), any(Message.class), any())).willAnswer((Answer<CompletionStage<Void>>)
+                invocation -> {
                     var handler = (DriverResponseHandler) invocation.getArgument(0);
                     for (var i = 0; i < fetchSize; i++) {
                         handler.onRecord(List.of());

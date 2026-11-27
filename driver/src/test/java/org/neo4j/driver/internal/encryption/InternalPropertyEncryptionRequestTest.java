@@ -55,10 +55,12 @@ class InternalPropertyEncryptionRequestTest {
     @ParameterizedTest
     @MethodSource("unsupportedValuesArgs")
     void shouldNotSupportValue(Value value) {
-        assertThrows(IllegalArgumentException.class, () -> PropertyEncryptionRequest.builder()
-                .fromValue(value)
-                .usingKeyAlias("main-key")
-                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PropertyEncryptionRequest.builder()
+                        .fromValue(value)
+                        .usingKeyAlias("main-key")
+                        .build());
     }
 
     @ParameterizedTest
@@ -75,11 +77,13 @@ class InternalPropertyEncryptionRequestTest {
     @ParameterizedTest
     @MethodSource("unsupportedAADArgs")
     void shouldNotSupportAAD(Value value) {
-        assertThrows(IllegalArgumentException.class, () -> PropertyEncryptionRequest.builder()
-                .fromValue(0)
-                .withAAD(value)
-                .usingKeyAlias("main-key")
-                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PropertyEncryptionRequest.builder()
+                        .fromValue(0)
+                        .withAAD(value)
+                        .usingKeyAlias("main-key")
+                        .build());
     }
 
     static Stream<Arguments> supportedValuesArgs() {

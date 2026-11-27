@@ -104,8 +104,8 @@ class InternalAsyncSessionTest {
         connection = connectionMock(new BoltProtocolVersion(4, 0));
         given(connection.close()).willReturn(completedFuture(null));
         connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any(), any()))
-                .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
+        given(connectionProvider.getConnection(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
+                invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);

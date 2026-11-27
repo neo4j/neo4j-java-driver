@@ -139,7 +139,8 @@ final class ObjectMappingIT {
     static Stream<Arguments> shouldMapValueArgs() {
         return Stream.of(
                 Arguments.of(Named.<Function<Map<String, Value>, ValueHolder>>of(
-                        "node", properties -> new NodeValue(new InternalNode(0L, Set.of("Product"), properties))
+                        "node",
+                        properties -> new NodeValue(new InternalNode(0L, Set.of("Product"), properties))
                                 .as(ValueHolder.class))),
                 Arguments.of(Named.<Function<Map<String, Value>, ValueHolder>>of(
                         "relationship",
