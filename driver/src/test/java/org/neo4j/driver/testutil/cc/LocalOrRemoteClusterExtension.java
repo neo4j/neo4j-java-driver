@@ -17,7 +17,6 @@
 package org.neo4j.driver.testutil.cc;
 
 import java.net.URI;
-import java.util.Optional;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -60,8 +59,8 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             clusterUri = remoteClusterUriFromSystemProperty();
             cleanDb();
         } else {
-            neo4jContainer = new Neo4jContainer(DatabaseExtension.neo4jImage())
-                    .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes");
+            neo4jContainer =
+                    new Neo4jContainer(DatabaseExtension.neo4jImage()).withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes");
             neo4jContainer.start();
 
             clusterUri = URI.create(neo4jContainer.getBoltUrl().replace("bolt://", "neo4j://"));

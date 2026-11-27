@@ -52,14 +52,17 @@ public class TransactionRun implements TestkitRequest {
 
     @Override
     public CompletionStage<TestkitResponse> processAsync(TestkitState testkitState) {
-        return testkitState.getAsyncTransactionHolder(data.getTxId()).thenCompose(transactionHolder -> transactionHolder
-                .getTransaction()
-                .runAsync(data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap())
-                .thenApply(resultCursor -> {
-                    var resultId =
-                            testkitState.addAsyncResultHolder(new ResultCursorHolder(transactionHolder, resultCursor));
-                    return createResponse(resultId, resultCursor.keys());
-                }));
+        return testkitState
+                .getAsyncTransactionHolder(data.getTxId())
+                .thenCompose(transactionHolder -> transactionHolder
+                        .getTransaction()
+                        .runAsync(
+                                data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap())
+                        .thenApply(resultCursor -> {
+                            var resultId = testkitState.addAsyncResultHolder(
+                                    new ResultCursorHolder(transactionHolder, resultCursor));
+                            return createResponse(resultId, resultCursor.keys());
+                        }));
     }
 
     @Override

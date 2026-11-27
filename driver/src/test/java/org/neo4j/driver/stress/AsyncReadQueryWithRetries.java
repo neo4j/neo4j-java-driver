@@ -34,9 +34,9 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
     public CompletionStage<Void> execute(C context) {
         var session = newSession(AccessMode.READ, context);
 
-        var txStage = session.executeReadAsync(
-                tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1").thenCompose(cursor -> cursor.nextAsync()
-                        .thenCompose(record -> processRecordAndGetSummary(record, cursor))));
+        var txStage = session.executeReadAsync(tx -> tx.runAsync("MATCH (n) RETURN n LIMIT 1")
+                .thenCompose(cursor ->
+                        cursor.nextAsync().thenCompose(record -> processRecordAndGetSummary(record, cursor))));
 
         var resultsProcessingStage = txStage.thenApply(resultSummary -> processResultSummary(resultSummary, context));
 

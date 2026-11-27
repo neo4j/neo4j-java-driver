@@ -141,8 +141,9 @@ class SessionIT {
     void shouldHandleNullAuthToken() {
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        assertThrows(AuthenticationException.class, () -> GraphDatabase.driver(neo4j.uri(), (AuthToken) null)
-                .verifyConnectivity());
+        assertThrows(
+                AuthenticationException.class,
+                () -> GraphDatabase.driver(neo4j.uri(), (AuthToken) null).verifyConnectivity());
     }
 
     @Test
@@ -762,9 +763,10 @@ class SessionIT {
             TestUtil.interruptWhenInWaitingState(Thread.currentThread());
 
             try {
-                var e = assertThrows(ServiceUnavailableException.class, () -> session2.run(
-                                "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
-                        .consume());
+                var e = assertThrows(
+                        ServiceUnavailableException.class,
+                        () -> session2.run("MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'")
+                                .consume());
                 assertThat(e.getMessage(), containsString("Connection to the database terminated"));
                 assertThat(e.getMessage(), containsString("Thread interrupted"));
             } finally {

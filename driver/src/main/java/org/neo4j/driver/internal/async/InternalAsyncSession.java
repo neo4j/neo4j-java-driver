@@ -88,9 +88,11 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     @Override
     public CompletionStage<AsyncTransaction> beginTransactionAsync(TransactionConfig config) {
         var beginObservation = observationProvider.beginTransaction(AsyncTransaction.class);
-        return observeAsync(beginObservation, () -> session.beginTransactionAsync(
-                        config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION), beginObservation)
-                .thenApply(tx -> new InternalAsyncTransaction(tx, observationProvider, null)));
+        return observeAsync(
+                beginObservation,
+                () -> session.beginTransactionAsync(
+                                config, new ApiTelemetryWork(TelemetryApi.UNMANAGED_TRANSACTION), beginObservation)
+                        .thenApply(tx -> new InternalAsyncTransaction(tx, observationProvider, null)));
     }
 
     @Override
@@ -114,21 +116,23 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             AccessMode mode, AsyncTransactionCallback<CompletionStage<T>> work, TransactionConfig config) {
         var apiTelemetryWork = new ApiTelemetryWork(TelemetryApi.MANAGED_TRANSACTION);
         var executeObservation = observationProvider.sessionExecute(AsyncSession.class, mode);
-        return observeAsync(executeObservation, () -> session.retryLogic().retryAsync(() -> {
-            var resultFuture = new CompletableFuture<T>();
-            var txFuture = session.beginTransactionAsync(mode, config, apiTelemetryWork, executeObservation);
+        return observeAsync(
+                executeObservation,
+                () -> session.retryLogic().retryAsync(() -> {
+                    var resultFuture = new CompletableFuture<T>();
+                    var txFuture = session.beginTransactionAsync(mode, config, apiTelemetryWork, executeObservation);
 
-            txFuture.whenComplete((tx, completionError) -> {
-                var error = Futures.completionExceptionCause(completionError);
-                if (error != null) {
-                    resultFuture.completeExceptionally(error);
-                } else {
-                    executeWork(resultFuture, tx, work, executeObservation);
-                }
-            });
+                    txFuture.whenComplete((tx, completionError) -> {
+                        var error = Futures.completionExceptionCause(completionError);
+                        if (error != null) {
+                            resultFuture.completeExceptionally(error);
+                        } else {
+                            executeWork(resultFuture, tx, work, executeObservation);
+                        }
+                    });
 
-            return resultFuture;
-        }));
+                    return resultFuture;
+                }));
     }
 
     private <T> void executeWork(

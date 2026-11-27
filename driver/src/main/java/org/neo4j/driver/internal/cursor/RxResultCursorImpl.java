@@ -371,11 +371,10 @@ public class RxResultCursorImpl extends AbstractRecordStateResponseHandler
     @Override
     public synchronized CompletionStage<Throwable> pullAllFailureAsync(Observation parentObservation) {
         log.trace("[%d] Pull all failure requested", hashCode());
-        var unfinishedState =
-                switch (state) {
-                    case READY, STREAMING, DISCARDING -> true;
-                    case FAILED, SUCCEEDED -> false;
-                };
+        var unfinishedState = switch (state) {
+            case READY, STREAMING, DISCARDING -> true;
+            case FAILED, SUCCEEDED -> false;
+        };
         if (recordConsumer != null && unfinishedState) {
             return CompletableFuture.completedFuture(
                     new TransactionNestingException(

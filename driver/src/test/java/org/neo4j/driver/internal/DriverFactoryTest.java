@@ -116,29 +116,33 @@ class DriverFactoryTest {
     @ParameterizedTest
     @ValueSource(strings = {"bob", "grey", "blah"})
     void shouldRejectInvalidSchemes(String input) {
-        var ex = assertThrows(IllegalArgumentException.class, () -> new DriverFactory()
-                .newInstance(
-                        new URI(input, "localhost", null, null),
-                        AuthTokenManagers.basic(AuthTokens::none),
-                        null,
-                        Config.defaultConfig(),
-                        null,
-                        null,
-                        null));
+        var ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> new DriverFactory()
+                        .newInstance(
+                                new URI(input, "localhost", null, null),
+                                AuthTokenManagers.basic(AuthTokens::none),
+                                null,
+                                Config.defaultConfig(),
+                                null,
+                                null,
+                                null));
         assertTrue(ex.getMessage().contains("Unsupported scheme: " + input));
     }
 
     @Test
     void shouldRejectNullScheme() {
-        var ex = assertThrows(IllegalArgumentException.class, () -> new DriverFactory()
-                .newInstance(
-                        new URI(null, "localhost", null, null),
-                        AuthTokenManagers.basic(AuthTokens::none),
-                        null,
-                        Config.defaultConfig(),
-                        null,
-                        null,
-                        null));
+        var ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> new DriverFactory()
+                        .newInstance(
+                                new URI(null, "localhost", null, null),
+                                AuthTokenManagers.basic(AuthTokens::none),
+                                null,
+                                Config.defaultConfig(),
+                                null,
+                                null,
+                                null));
         assertTrue(ex.getMessage().contains("Scheme must not be null"));
     }
 

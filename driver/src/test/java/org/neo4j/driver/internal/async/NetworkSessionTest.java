@@ -108,8 +108,8 @@ class NetworkSessionTest {
         given(connection.close()).willReturn(completedFuture(null));
         given(connection.valueFactory()).willReturn(mock(BoltValueFactory.class));
         connectionProvider = mock(DriverBoltConnectionSource.class);
-        given(connectionProvider.getConnection(any(), any()))
-                .willAnswer((Answer<CompletionStage<DriverBoltConnection>>) invocation -> {
+        given(connectionProvider.getConnection(any(), any())).willAnswer((Answer<CompletionStage<DriverBoltConnection>>)
+                invocation -> {
                     var parameters = (RoutedBoltConnectionParameters) invocation.getArguments()[0];
                     parameters.databaseNameListener().accept(parameters.databaseName());
                     return completedFuture(connection);

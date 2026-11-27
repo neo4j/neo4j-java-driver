@@ -16,19 +16,17 @@
  */
 package org.neo4j.driver.internal.encryption;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-
-import javax.crypto.SecretKey;
-
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+import javax.crypto.SecretKey;
+import org.junit.jupiter.api.Test;
 
 class InMemoryKeyCacheTest {
     @Test
@@ -42,7 +40,7 @@ class InMemoryKeyCacheTest {
         var keyData = cache.findByAlias(alias);
         assertNotNull(keyData);
         assertEquals(key, keyData.key());
-        
+
         cache.setAlias(id, null);
 
         assertNull(cache.findByAlias(alias));

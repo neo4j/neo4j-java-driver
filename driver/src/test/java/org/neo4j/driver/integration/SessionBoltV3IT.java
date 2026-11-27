@@ -108,8 +108,10 @@ class SessionBoltV3IT {
                             TransactionConfig.builder().withTimeout(ofMillis(1)).build();
 
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    var error = assertThrows(Exception.class, () -> session.run("MATCH (n:Node) SET n.prop = 2", config)
-                            .consume());
+                    var error = assertThrows(
+                            Exception.class,
+                            () -> session.run("MATCH (n:Node) SET n.prop = 2", config)
+                                    .consume());
                     verifyValidException(error);
                 });
             }

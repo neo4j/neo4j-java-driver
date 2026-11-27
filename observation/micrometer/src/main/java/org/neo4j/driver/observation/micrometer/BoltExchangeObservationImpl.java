@@ -20,7 +20,6 @@ import io.micrometer.observation.Observation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import org.neo4j.driver.internal.observation.BoltExchangeObservation;
 
 final class BoltExchangeObservationImpl extends ObservationImpl implements BoltExchangeObservation {
@@ -29,7 +28,11 @@ final class BoltExchangeObservationImpl extends ObservationImpl implements BoltE
 
     BoltExchangeObservationImpl(Observation delegate) {
         super(delegate);
-        this.context = (BoltExchangeContext) Objects.requireNonNull(delegate.getContext());
+        if (delegate.getContext() instanceof BoltExchangeContext boltExchangeContext) {
+            this.context = boltExchangeContext;
+        } else {
+            this.context = null;
+        }
     }
 
     @Override
@@ -64,7 +67,9 @@ final class BoltExchangeObservationImpl extends ObservationImpl implements BoltE
 
     @Override
     public void stop() {
-        context.setMessageNames(messageNames);
+        if (context != null) {
+            context.setMessageNames(messageNames);
+        }
         super.stop();
     }
 }

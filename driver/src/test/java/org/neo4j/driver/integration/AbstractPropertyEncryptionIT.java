@@ -190,11 +190,10 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         }
         var plaintextValue = "plaintext";
         var nextStep = PropertyEncryptionRequest.builder().fromValue(plaintextValue);
-        var encryptionRequest =
-                switch (keyReferenceType) {
-                    case ID -> nextStep.usingKeyId(reference).build();
-                    case ALIAS -> nextStep.usingKeyAlias(reference).build();
-                };
+        var encryptionRequest = switch (keyReferenceType) {
+            case ID -> nextStep.usingKeyId(reference).build();
+            case ALIAS -> nextStep.usingKeyAlias(reference).build();
+        };
 
         // WHEN & THEN
         var error = assertThrows(Neo4jException.class, () -> encryptToBytes(encryptionRequest));
@@ -235,11 +234,10 @@ public abstract class AbstractPropertyEncryptionIT<T extends BasePropertyEncrypt
         var propertyEncryption = driver.propertyEncryption();
         var plaintextValue = "plaintext";
         var nextStep = PropertyEncryptionRequest.builder().fromValue(plaintextValue);
-        var encryptionRequest =
-                switch (keyReferenceType) {
-                    case ID -> nextStep.usingKeyId(reference).build();
-                    case ALIAS -> nextStep.usingKeyAlias(reference).build();
-                };
+        var encryptionRequest = switch (keyReferenceType) {
+            case ID -> nextStep.usingKeyId(reference).build();
+            case ALIAS -> nextStep.usingKeyAlias(reference).build();
+        };
 
         // WHEN & THEN
         var error = assertThrows(PropertyEncryptionException.class, () -> encryptToBytes(encryptionRequest));

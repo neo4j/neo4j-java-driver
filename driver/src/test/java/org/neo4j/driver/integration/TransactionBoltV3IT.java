@@ -82,9 +82,11 @@ class TransactionBoltV3IT {
 
         var config = TransactionConfig.builder().withMetadata(metadata).build();
 
-        var txFuture = driver.asyncSession().beginTransactionAsync(config).thenCompose(tx -> tx.runAsync("RETURN 1")
-                .thenCompose(ResultCursor::consumeAsync)
-                .thenApply(ignore -> tx));
+        var txFuture = driver.asyncSession()
+                .beginTransactionAsync(config)
+                .thenCompose(tx -> tx.runAsync("RETURN 1")
+                        .thenCompose(ResultCursor::consumeAsync)
+                        .thenApply(ignore -> tx));
 
         var transaction = await(txFuture);
         try {

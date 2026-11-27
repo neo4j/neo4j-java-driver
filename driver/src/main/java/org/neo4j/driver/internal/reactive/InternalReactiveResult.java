@@ -70,8 +70,9 @@ public class InternalReactiveResult implements ReactiveResult {
     @Override
     public Publisher<ResultSummary> consume() {
         var consumeObservation = observationProvider.resultConsume(ReactiveResult.class);
-        return publisherToFlowPublisher(
-                observeStreams(consumeObservation, Mono.create(sink -> cursor.summaryAsync(consumeObservation)
+        return publisherToFlowPublisher(observeStreams(
+                consumeObservation,
+                Mono.create(sink -> cursor.summaryAsync(consumeObservation)
                         .whenComplete((summary, summaryCompletionError) -> {
                             var error = Futures.completionExceptionCause(summaryCompletionError);
                             if (summary != null) {

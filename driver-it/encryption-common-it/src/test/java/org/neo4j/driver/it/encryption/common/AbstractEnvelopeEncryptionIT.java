@@ -47,9 +47,10 @@ public abstract class AbstractEnvelopeEncryptionIT extends AbstractBaseEnvelopeE
 
     @Override
     protected void deleteKey() {
-        encryption.keyManager().findByAlias(keyAlias).ifPresent(key -> encryption
+        encryption
                 .keyManager()
-                .deleteById(key.id()));
+                .findByAlias(keyAlias)
+                .ifPresent(key -> encryption.keyManager().deleteById(key.id()));
     }
 
     @Override
