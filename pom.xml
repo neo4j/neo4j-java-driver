@@ -40,14 +40,14 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-bom.version>4.2.19.Final</netty-bom.version>
+    <netty-bom.version>4.2.21.Final</netty-bom.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
     <reactor-bom.version>2024.0.18</reactor-bom.version>
     <slf4j-api.version>2.0.20</slf4j-api.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <mockito-core.version>5.24.0</mockito-core.version>
+    <mockito-core.version>5.25.0</mockito-core.version>
     <junit.version>6.1.3</junit.version>
     <!-- supply a newer version than the one supplied by the reactive-streams 1.0.4 -->
     <testng.version>7.12.0</testng.version>
@@ -56,16 +56,16 @@
     <commons-compress.version>1.28.0</commons-compress.version>
     <!-- an optional dependency of commons-compress used by TarArchiveOutputStream -->
     <commons-codec.version>1.23.0</commons-codec.version>
-    <bouncycastle-jdk18on.version>1.86</bouncycastle-jdk18on.version>
-    <logback-classic.version>1.6.6</logback-classic.version>
+    <bouncycastle-jdk18on.version>1.87</bouncycastle-jdk18on.version>
+    <logback-classic.version>1.6.8</logback-classic.version>
     <log4j.version>2.24.3</log4j.version>
-    <jackson.version>2.22.4</jackson.version>
+    <jackson.version>2.23.0</jackson.version>
     <lombok.version>1.18.48</lombok.version>
-    <svm.version>25.0.5.0.2</svm.version>
+    <svm.version>25.0.5.1</svm.version>
     <micrometer-docs-generator.version>1.0.4</micrometer-docs-generator.version>
-    <blockhound.version>1.0.18.RELEASE</blockhound.version>
+    <blockhound.version>1.0.19.RELEASE</blockhound.version>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
+    <spotless-maven-plugin.version>3.12.0</spotless-maven-plugin.version>
     <!-- temporary until palantir-java-format is updated to work on Java 27 -->
     <spotless.check.skip>true</spotless.check.skip>
     <build-resources.version>2026.07.1</build-resources.version>

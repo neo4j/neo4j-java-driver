@@ -13,14 +13,13 @@ Apache Software License, Version 2.0
   Java Native Access
   Java Native Access Platform
   Netty/Buffer
-  Netty/Codec
   Netty/Codec/Base
+  Netty/Codec/Classes/Quic
   Netty/Codec/Compression
   Netty/Codec/DNS
   Netty/Codec/HTTP
   Netty/Codec/HTTP2
-  Netty/Codec/Marshalling
-  Netty/Codec/Protobuf
+  Netty/Codec/Http3
   Netty/Codec/Socks
   Netty/Common
   Netty/Handler
